@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>Spark常见问题 | Jason&#39;s Blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="Spark Streaming消费Kafka数据首先考虑Spark Streaming消费Kafka数据时，如何保证数据不丢失
+参考资料:Recent Evolution of Zero Data Loss Guarantee in Spark Streaming With KafkaImprovements to Kafka integration of Spark Streaming
+
+丢失的">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Spark常见问题">
+<meta property="og:url" content="http://louz.github.io/2016/10/17/spark-faq/index.html">
+<meta property="og:site_name" content="Jason's Blog">
+<meta property="og:description" content="Spark Streaming消费Kafka数据首先考虑Spark Streaming消费Kafka数据时，如何保证数据不丢失
+参考资料:Recent Evolution of Zero Data Loss Guarantee in Spark Streaming With KafkaImprovements to Kafka integration of Spark Streaming
+
+丢失的">
+<meta property="og:image" content="http://louz.github.io/img/spark-reliable-source-reliable-receiver.png">
+<meta property="og:image" content="http://louz.github.io/img/spark-metadata-checkpointing.png">
+<meta property="og:image" content="http://louz.github.io/img/spark-wal.png">
+<meta property="og:image" content="http://louz.github.io/img/spark-kafka-direct-api.png">
+<meta property="og:image" content="http://louz.github.io/img/spark-wall-at-least-once-delivery.png">
+<meta property="og:updated_time" content="2016-10-21T02:02:11.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Spark常见问题">
+<meta name="twitter:description" content="Spark Streaming消费Kafka数据首先考虑Spark Streaming消费Kafka数据时，如何保证数据不丢失
+参考资料:Recent Evolution of Zero Data Loss Guarantee in Spark Streaming With KafkaImprovements to Kafka integration of Spark Streaming
+
+丢失的">
+<meta name="twitter:image" content="http://louz.github.io/img/spark-reliable-source-reliable-receiver.png">
+  
+    <link rel="alternate" href="/atom.xml" title="Jason&#39;s Blog" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  <link rel="stylesheet" href="/css/style.css">
+  
+
+</head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Jason&#39;s Blog</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" results="0" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://louz.github.io"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-spark-faq" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2016/10/17/spark-faq/" class="article-date">
+  <time datetime="2016-10-17T07:11:06.000Z" itemprop="datePublished">2016-10-17</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/开发/">开发</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Spark常见问题
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="Spark-Streaming消费Kafka数据"><a href="#Spark-Streaming消费Kafka数据" class="headerlink" title="Spark Streaming消费Kafka数据"></a>Spark Streaming消费Kafka数据</h2><h3 id="首先考虑Spark-Streaming消费Kafka数据时，如何保证数据不丢失"><a href="#首先考虑Spark-Streaming消费Kafka数据时，如何保证数据不丢失" class="headerlink" title="首先考虑Spark Streaming消费Kafka数据时，如何保证数据不丢失"></a>首先考虑Spark Streaming消费Kafka数据时，如何保证数据不丢失</h3><blockquote>
+<p><a href="http://getindata.com/blog/post/recent-evolution-of-zero-data-loss-guarantee-in-spark-streaming-with-kafka/" target="_blank" rel="external">参考资料:Recent Evolution of Zero Data Loss Guarantee in Spark Streaming With Kafka</a><br><a href="https://databricks.com/blog/2015/03/30/improvements-to-kafka-integration-of-spark-streaming.html" target="_blank" rel="external">Improvements to Kafka integration of Spark Streaming</a></p>
+</blockquote>
+<p>丢失的情况包括：</p>
+<ol>
+<li>Spark Streaming正在读取Kafka的数据，突然挂掉；</li>
+<li>Spark Streaming读取完Kafka的数据，在保存offset前（包括保存到Kafka的zookeeper或者某种持久化存储）挂掉。</li>
+</ol>
+<p>Spark Streaming从1.3以后提供2种方式消费Kafka数据，一种利用<code>Receiver</code>读取Kafka数据，生成DStream，然后供后续的task进行处理；另一种通过<code>Driver</code>计算每批次要消费的offset范围，由task的<code>Executor</code>通过Kafka简单API直接消费</p>
+<p><em>问题：两种方式产生的DStream中的RDD进行partition的逻辑各是什么？第二种方式Executor的个数是否和Kafka主题的partition数目一致？</em></p>
+<p>下面分别看看两种方式有哪些容错手段：<br><strong>方式一：利用Receiver</strong><br>代码如下：<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">import</span> org.apache.spark.streaming.kafka._</div><div class="line"></div><div class="line">...</div><div class="line"><span class="keyword">val</span> kafkaStream = <span class="type">KafkaUtils</span>.createStream(streamingContext, </div><div class="line">     [<span class="type">ZK</span> quorum], [consumer group id], [per-topic number of <span class="type">Kafka</span> partitions to consume])</div></pre></td></tr></table></figure></p>
+<p>首先，保证<code>Receiver</code>的可靠性：<br><img src="img/spark-reliable-source-reliable-receiver.png" alt="图1. 利用Receiver消费Kafka数据"></p>
+<ol>
+<li>首先<code>Receiver</code>从Kafka读取数据</li>
+<li>得到一段数据，生成RDD(?)之后，数据复制到2个<code>Executor</code></li>
+<li>告知<code>Driver</code>该段Block的所有ID</li>
+<li>更新<code>Zookeeper</code>中的offset信息</li>
+</ol>
+<p>当<code>Receiver</code>挂掉重启后，可根据<code>Zookeeper</code>中的offset信息继续读取Kafka消息</p>
+<p>其次，保证<code>Driver</code>的可靠性：<br><img src="img/spark-metadata-checkpointing.png" alt="图1. Driver开启checkpoint"></p>
+<p>开启checkpoint机制后，driver会把以下信息保存到HDFS等可靠存储上：</p>
+<ol>
+<li>配置信息</li>
+<li>代码</li>
+<li>一些排队等待处理但没有完成的RDD（仅仅是metadata，而不是data）</li>
+</ol>
+<p>这样，在Driver挂掉重启后，能根据以上信息重新构造Driver继续运行</p>
+<p>但即使做了上述的2项设置，仍然存在丢失数据的可能，主要是以下的场景：<br>回到图1的场景下</p>
+<ol>
+<li>在第2步，数据正确复制到2个Executor，并缓存在它们的内存中；</li>
+<li>Receiver告知Kafka消息已消费（更新了ZK中的offset）</li>
+<li>Executor开始处理缓存在内存中的数据</li>
+<li>这时，Driver挂了</li>
+<li>由于Spark的机制，Driver挂了之后，由它启动的所有Executor都要kill掉</li>
+<li>在处理数据的Executor进程被kill掉，缓存的内存自然也没有了，但由于Receiver认为这些数据已经消费了，因此这部分数据无法再恢复。</li>
+</ol>
+<p>于是，从Spark1.2开始引入一个WAL（Write ahead log）的东东，简单来说就是在Receiver把数据复制到Executor前，先写到可靠存储上，如图：<br><img src="img/spark-wal.png" alt="图3. 加上WAL的完整处理逻辑"></p>
+<p>自此，再也不用担心数据会丢失了。</p>
+<p><strong>方式二：Direct Stream</strong><br><img src="img/spark-kafka-direct-api.png" alt="图4. 使用Direct Stream"></p>
+<ol>
+<li>一开始Driver负责从ZK查询每个topic/partition的最新offset</li>
+<li>计算下个batch的offset范围</li>
+<li>将offset范围交给Executor</li>
+<li>Executor利用Kafka的SimpleConsumer API访问Kafka，消费消息</li>
+<li>Executor计算成功后通知Driver，Driver会将offset信息保存到checkpoint中</li>
+</ol>
+<blockquote>
+<p><a href="http://blog.cloudera.com/blog/2015/03/exactly-once-spark-streaming-from-apache-kafka/" target="_blank" rel="external">Exactly-once Spark Streaming from Apache Kafka</a>——对内部实现说得比较清楚</p>
+</blockquote>
+<h3 id="BUT，如果要保证数据要且只能消费一次呢？"><a href="#BUT，如果要保证数据要且只能消费一次呢？" class="headerlink" title="BUT，如果要保证数据要且只能消费一次呢？"></a>BUT，如果要保证数据要且只能消费一次呢？</h3><p>设想一下如果在Receiver更新ZK之前挂掉了，如下图：<br><img src="img/spark-wall-at-least-once-delivery.png" alt="图5. Receiver更新ZK之前挂掉的情况"></p>
+<ol>
+<li>Kafka的消息已经成功通过WAL写进HDFS</li>
+<li>Spark Streaming也已经成功处理完这些数据</li>
+<li>Receiver更新ZK的offset之前挂掉！</li>
+<li>Receiver重启恢复，从WAL中恢复上次消费的数据</li>
+<li>继续消费Kafka消息，但由于Receiver使用的是Kafka的高级API，会根据ZK中记录的已消费的offset往后继续消费，因此有部分消息会重复消费计算</li>
+</ol>
+<h3 id="最后考虑性能"><a href="#最后考虑性能" class="headerlink" title="最后考虑性能"></a>最后考虑性能</h3><p><code>WAL</code>有2个缺点：</p>
+<ol>
+<li><p>由于从Receiver取到的数据要先持久化，因此会降低消费的吞吐量（一个解决办法就是增加Receiver），代码如下：</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">val</span> kafkaParams: <span class="type">Map</span>[<span class="type">String</span>, <span class="type">String</span>] = <span class="type">Map</span>(<span class="string">"group.id"</span> -&gt; <span class="string">"terran"</span>, <span class="comment">/* ignore rest */</span>)</div><div class="line"><span class="keyword">val</span> numStreams = <span class="number">5</span></div><div class="line"><span class="keyword">val</span> kafkaStreams = (<span class="number">1</span> to numStreams).map &#123; i =&gt; <span class="type">KafkaUtils</span>.createStream(..., kafkaParams) &#125;</div><div class="line"><span class="keyword">val</span> unifiedStream = streamingContext.union(kafkaStreams)</div><div class="line">unifiedStream.print()</div></pre></td></tr></table></figure>
+</li>
+<li><p>增加存储空间：同一份数据在Kafka有一份，在HDFS也有一份</p>
+</li>
+</ol>
+<p><a href="http://blog.csdn.net/stark_summer/article/details/44038247" target="_blank" rel="external">参考资料1</a><br><a href="http://spark.apache.org/docs/1.3.0/streaming-programming-guide.html#input-dstreams-and-receivers" target="_blank" rel="external">参考资料2</a></p>
+<ol>
+<li>创建多个<code>Input DStreams</code><figure class="highlight scala"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">val</span> kafkaParams: <span class="type">Map</span>[<span class="type">String</span>, <span class="type">String</span>] = <span class="type">Map</span>(<span class="string">"group.id"</span> -&gt; <span class="string">"terran"</span>, <span class="comment">/* ignore rest */</span>)</div><div class="line"><span class="keyword">val</span> numStreams = <span class="number">5</span></div><div class="line"><span class="keyword">val</span> kafkaStreams = (<span class="number">1</span> to numStreams).map &#123; i =&gt; <span class="type">KafkaUtils</span>.createStream(..., kafkaParams) &#125;</div><div class="line"><span class="keyword">val</span> unifiedStream = streamingContext.union(kafkaStreams)</div><div class="line">unifiedStream.print()</div></pre></td></tr></table></figure>
+</li>
+</ol>
+<p>按以上方式创建的5个Input DStream，都是Kafka消费组terran的成员，它们可以共同消费Kafka特定主题的消息，在<code>KafkaUtils.createStream</code>方法中，可以设置单个<code>Input DStream</code>的消费者线程数</p>
+<ol>
+<li>读取方式<br><a href="http://group.jobbole.com/15559/" target="_blank" rel="external">http://group.jobbole.com/15559/</a></li>
+</ol>
+<p>##<br><a href="https://github.com/jacksu/utils4s/blob/master/spark-knowledge/md/spark_streaming%E4%BD%BF%E7%94%A8kafka%E4%BF%9D%E8%AF%81%E6%95%B0%E6%8D%AE%E9%9B%B6%E4%B8%A2%E5%A4%B1.md" target="_blank" rel="external">https://github.com/jacksu/utils4s/blob/master/spark-knowledge/md/spark_streaming%E4%BD%BF%E7%94%A8kafka%E4%BF%9D%E8%AF%81%E6%95%B0%E6%8D%AE%E9%9B%B6%E4%B8%A2%E5%A4%B1.md</a></p>
+<h2 id="RDD的partition"><a href="#RDD的partition" class="headerlink" title="RDD的partition"></a>RDD的partition</h2><p><a href="https://www.dezyre.com/article/how-data-partitioning-in-spark-helps-achieve-more-parallelism/297" target="_blank" rel="external">参考文档</a></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://louz.github.io/2016/10/17/spark-faq/" data-id="cixn1gs11002lj8zotsrc2vn7" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Spark/">Spark</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+  
+    <a href="/2016/10/08/scala-learning/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">Scala学习笔记</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/Flume/">Flume</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/HBase/">HBase</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/Hadoop/">Hadoop</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/Hexo/">Hexo</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/IE/">IE</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/JBoss/">JBoss</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/Java/">Java</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linux/">Linux</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/MS-Word/">MS Word</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/MySQL/">MySQL</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/QuickBuild/">QuickBuild</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/R/">R</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/Sqoop/">Sqoop</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/Zookeeper/">Zookeeper</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/ant/">ant</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/应用/">应用</a><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/应用/Markdown/">Markdown</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/应用/Sublime/">Sublime</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/应用/Windows/">Windows</a></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/">开发</a><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/开发/AWS/">AWS</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/BDD/">BDD</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/Hadoop/">Hadoop</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/JDK/">JDK</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/JVM/">JVM</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/Java/">Java</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/Kafka/">Kafka</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/Maven/">Maven</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/RESTFUL/">RESTFUL</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/Spring/">Spring</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/Tomcat/">Tomcat</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/docker/">docker</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/http/">http</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/代码质量/">代码质量</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/单元测试/">单元测试</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/数据库/">数据库</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/设计模式/">设计模式</a></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/杂谈/">杂谈</a><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/杂谈/移动工作站/">移动工作站</a></li></ul></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/AWS/">AWS</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CentOS/">CentOS</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Cucumber/">Cucumber</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/DB2/">DB2</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Design-Pattern/">Design Pattern</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Flume/">Flume</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/HBase-API/">HBase API</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/HBase-Shell/">HBase Shell</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/HBase配置/">HBase配置</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/HDFS/">HDFS</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Hadoop/">Hadoop</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Hexo/">Hexo</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/IE/">IE</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/JBoss/">JBoss</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/JDK/">JDK</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/JNDI/">JNDI</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/JVM/">JVM</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Java/">Java</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux/">Linux</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux-Shell/">Linux Shell</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Markdown/">Markdown</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Maven/">Maven</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/MySQL/">MySQL</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/PMD/">PMD</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/QuickBuild/">QuickBuild</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/R/">R</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Restful/">Restful</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Scala/">Scala</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Spark/">Spark</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Spring/">Spring</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Sqoop/">Sqoop</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Sublime/">Sublime</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/WTG/">WTG</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Zookeeper/">Zookeeper</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ant/">ant</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/checkstyle/">checkstyle</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/docker/">docker</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/dockerfile/">dockerfile</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hexo/">hexo</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/http/">http</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/jersey/">jersey</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/kafka/">kafka</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/maven/">maven</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/redis/">redis</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/spark/">spark</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/tomcat/">tomcat</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/word技巧/">word技巧</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/中文/">中文</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/代码质量/">代码质量</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/单元测试/">单元测试</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/同步/">同步</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/大数据/">大数据</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/并发编程/">并发编程</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/正则表达式/">正则表达式</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/测试覆盖率/">测试覆盖率</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/设计模式/">设计模式</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/AWS/" style="font-size: 10px;">AWS</a> <a href="/tags/CentOS/" style="font-size: 10px;">CentOS</a> <a href="/tags/Cucumber/" style="font-size: 10px;">Cucumber</a> <a href="/tags/DB2/" style="font-size: 10px;">DB2</a> <a href="/tags/Design-Pattern/" style="font-size: 10px;">Design Pattern</a> <a href="/tags/Flume/" style="font-size: 10px;">Flume</a> <a href="/tags/HBase-API/" style="font-size: 10px;">HBase API</a> <a href="/tags/HBase-Shell/" style="font-size: 10px;">HBase Shell</a> <a href="/tags/HBase配置/" style="font-size: 10px;">HBase配置</a> <a href="/tags/HDFS/" style="font-size: 10px;">HDFS</a> <a href="/tags/Hadoop/" style="font-size: 13.33px;">Hadoop</a> <a href="/tags/Hexo/" style="font-size: 10px;">Hexo</a> <a href="/tags/IE/" style="font-size: 10px;">IE</a> <a href="/tags/JBoss/" style="font-size: 10px;">JBoss</a> <a href="/tags/JDK/" style="font-size: 10px;">JDK</a> <a href="/tags/JNDI/" style="font-size: 10px;">JNDI</a> <a href="/tags/JVM/" style="font-size: 10px;">JVM</a> <a href="/tags/Java/" style="font-size: 10px;">Java</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/Linux-Shell/" style="font-size: 10px;">Linux Shell</a> <a href="/tags/Markdown/" style="font-size: 10px;">Markdown</a> <a href="/tags/Maven/" style="font-size: 13.33px;">Maven</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/PMD/" style="font-size: 10px;">PMD</a> <a href="/tags/QuickBuild/" style="font-size: 10px;">QuickBuild</a> <a href="/tags/R/" style="font-size: 10px;">R</a> <a href="/tags/Restful/" style="font-size: 10px;">Restful</a> <a href="/tags/Scala/" style="font-size: 10px;">Scala</a> <a href="/tags/Spark/" style="font-size: 10px;">Spark</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Sqoop/" style="font-size: 10px;">Sqoop</a> <a href="/tags/Sublime/" style="font-size: 10px;">Sublime</a> <a href="/tags/WTG/" style="font-size: 10px;">WTG</a> <a href="/tags/Zookeeper/" style="font-size: 13.33px;">Zookeeper</a> <a href="/tags/ant/" style="font-size: 10px;">ant</a> <a href="/tags/checkstyle/" style="font-size: 10px;">checkstyle</a> <a href="/tags/docker/" style="font-size: 16.67px;">docker</a> <a href="/tags/dockerfile/" style="font-size: 10px;">dockerfile</a> <a href="/tags/hexo/" style="font-size: 10px;">hexo</a> <a href="/tags/http/" style="font-size: 10px;">http</a> <a href="/tags/jersey/" style="font-size: 10px;">jersey</a> <a href="/tags/kafka/" style="font-size: 10px;">kafka</a> <a href="/tags/maven/" style="font-size: 10px;">maven</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/spark/" style="font-size: 10px;">spark</a> <a href="/tags/tomcat/" style="font-size: 10px;">tomcat</a> <a href="/tags/word技巧/" style="font-size: 10px;">word技巧</a> <a href="/tags/中文/" style="font-size: 10px;">中文</a> <a href="/tags/代码质量/" style="font-size: 10px;">代码质量</a> <a href="/tags/单元测试/" style="font-size: 10px;">单元测试</a> <a href="/tags/同步/" style="font-size: 10px;">同步</a> <a href="/tags/大数据/" style="font-size: 20px;">大数据</a> <a href="/tags/并发编程/" style="font-size: 10px;">并发编程</a> <a href="/tags/正则表达式/" style="font-size: 10px;">正则表达式</a> <a href="/tags/测试覆盖率/" style="font-size: 10px;">测试覆盖率</a> <a href="/tags/设计模式/" style="font-size: 10px;">设计模式</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/10/">October 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/09/">September 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/08/">August 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/07/">July 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/06/">June 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/04/">April 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/01/">January 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/12/">December 2015</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/11/">November 2015</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/09/">September 2015</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/06/">June 2015</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/05/">May 2015</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/04/">April 2015</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/02/">February 2015</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/11/">November 2014</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/08/">August 2014</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/06/">June 2014</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/05/">May 2014</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/02/">February 2014</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2016/10/17/spark-faq/">Spark常见问题</a>
+          </li>
+        
+          <li>
+            <a href="/2016/10/08/scala-learning/">Scala学习笔记</a>
+          </li>
+        
+          <li>
+            <a href="/2016/10/05/hexo-theme-modify/">Hexo Markdown语法效果</a>
+          </li>
+        
+          <li>
+            <a href="/2016/09/30/spring-howto/">Spring常见问题</a>
+          </li>
+        
+          <li>
+            <a href="/2016/09/29/test-coverage/">测试覆盖率配置</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2017 Jason Lu<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  <link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+  <script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>

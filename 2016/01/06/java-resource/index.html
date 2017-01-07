@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>Java访问资源 | Jason&#39;s Blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="从classpath中读取文件个人觉得使用Class.getResourceAsStream(path)较为靠谱，Class.getResource(path)在JBoss中使用，获取到的路径会有问题
+123InputStream in = ResourceDemo.class.getResourceAsStream(&amp;quot;aa.properties&amp;quot;);Properties pr">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Java访问资源">
+<meta property="og:url" content="http://louz.github.io/2016/01/06/java-resource/index.html">
+<meta property="og:site_name" content="Jason's Blog">
+<meta property="og:description" content="从classpath中读取文件个人觉得使用Class.getResourceAsStream(path)较为靠谱，Class.getResource(path)在JBoss中使用，获取到的路径会有问题
+123InputStream in = ResourceDemo.class.getResourceAsStream(&amp;quot;aa.properties&amp;quot;);Properties pr">
+<meta property="og:updated_time" content="2016-12-27T05:03:37.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Java访问资源">
+<meta name="twitter:description" content="从classpath中读取文件个人觉得使用Class.getResourceAsStream(path)较为靠谱，Class.getResource(path)在JBoss中使用，获取到的路径会有问题
+123InputStream in = ResourceDemo.class.getResourceAsStream(&amp;quot;aa.properties&amp;quot;);Properties pr">
+  
+    <link rel="alternate" href="/atom.xml" title="Jason&#39;s Blog" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  <link rel="stylesheet" href="/css/style.css">
+  
+
+</head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Jason&#39;s Blog</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" results="0" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://louz.github.io"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-java-resource" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2016/01/06/java-resource/" class="article-date">
+  <time datetime="2016-01-06T02:48:09.000Z" itemprop="datePublished">2016-01-06</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/开发/">开发</a>►<a class="article-category-link" href="/categories/开发/JDK/">JDK</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Java访问资源
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h3 id="从classpath中读取文件"><a href="#从classpath中读取文件" class="headerlink" title="从classpath中读取文件"></a>从classpath中读取文件</h3><p>个人觉得使用<code>Class.getResourceAsStream(path)</code>较为靠谱，<code>Class.getResource(path)</code>在JBoss中使用，获取到的路径会有问题</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">InputStream in = ResourceDemo.class.getResourceAsStream(&quot;aa.properties&quot;);</div><div class="line">Properties prop = new Properties();</div><div class="line">prop.load(in);</div></pre></td></tr></table></figure>
+<hr>
+<h3 id="对文件（目录）操作（JDK7以后）"><a href="#对文件（目录）操作（JDK7以后）" class="headerlink" title="对文件（目录）操作（JDK7以后）"></a>对文件（目录）操作（JDK7以后）</h3><p>使用<code>java.nio.file.Files</code>、<code>java.nio.file.Paths</code>、<code>java.nio.file.Path</code>结合比较好</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div></pre></td><td class="code"><pre><div class="line">Path path = Paths.get(<span class="string">"/"</span>);</div><div class="line">Files.walkFileTree(path, <span class="keyword">new</span> FileVisitor&lt;Path&gt;() &#123;</div><div class="line">    <span class="meta">@Override</span></div><div class="line">    <span class="function"><span class="keyword">public</span> FileVisitResult <span class="title">preVisitDirectory</span><span class="params">(Path dir, BasicFileAttributes attrs)</span> <span class="keyword">throws</span> IOException </span>&#123;</div><div class="line">        System.out.println(<span class="string">"dir:"</span> + dir);</div><div class="line">        <span class="keyword">return</span> FileVisitResult.CONTINUE;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="meta">@Override</span></div><div class="line">    <span class="function"><span class="keyword">public</span> FileVisitResult <span class="title">visitFile</span><span class="params">(Path file, BasicFileAttributes attrs)</span> <span class="keyword">throws</span> IOException </span>&#123;</div><div class="line">        System.out.println(<span class="string">"file:"</span> + file);</div><div class="line">        <span class="keyword">return</span> FileVisitResult.CONTINUE;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="meta">@Override</span></div><div class="line">    <span class="function"><span class="keyword">public</span> FileVisitResult <span class="title">visitFileFailed</span><span class="params">(Path file, IOException exc)</span> <span class="keyword">throws</span> IOException </span>&#123;</div><div class="line">        <span class="keyword">return</span> FileVisitResult.CONTINUE;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="meta">@Override</span></div><div class="line">    <span class="function"><span class="keyword">public</span> FileVisitResult <span class="title">postVisitDirectory</span><span class="params">(Path dir, IOException exc)</span> <span class="keyword">throws</span> IOException </span>&#123;</div><div class="line">        <span class="keyword">return</span> FileVisitResult.CONTINUE;</div><div class="line">    &#125;</div><div class="line">&#125;);</div></pre></td></tr></table></figure>
+<h3 id="本地（内嵌式）DNS服务"><a href="#本地（内嵌式）DNS服务" class="headerlink" title="本地（内嵌式）DNS服务"></a>本地（内嵌式）DNS服务</h3><p>参考资料：<br><a href="http://blog.arganzheng.me/posts/java-dns-lookup-internal.html" target="_blank" rel="external">Java DNS查询内部实现</a><br><a href="http://rkuzmik.blogspot.com/2006/08/local-managed-dns-java_11.html" target="_blank" rel="external">Local Managed DNS (Java) </a><br><a href="https://my.oschina.net/fhd/blog/371997" target="_blank" rel="external">InetAddress类之创建新的InetAddress对象 </a></p>
+<p>问题：应用中通过域名或hostname访问外部应用，但dns服务器上又没有它们的ip映射关系<br>目的：开发一个内嵌式的DNS服务，可通过配置注册hostname和ip的映射关系<br>步骤：</p>
+<ol>
+<li><p>在源代码的<code>META-INF/services</code>目录增加一个<code>sun.net.spi.nameservice.NameServiceDescriptor</code>文件，内容为</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">io.jasonlu.learning.dnslookup.LocalManagedNameServiceDescriptor</div></pre></td></tr></table></figure>
+</li>
+<li><p><code>LocalManagedNameServiceDescriptor</code>的内容如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">LocalManagedNameServiceDescriptor</span> <span class="keyword">implements</span> <span class="title">NameServiceDescriptor</span> </span>&#123;</div><div class="line">    <span class="meta">@Override</span></div><div class="line">    <span class="function"><span class="keyword">public</span> NameService <span class="title">createNameService</span><span class="params">()</span> <span class="keyword">throws</span> Exception </span>&#123;</div><div class="line">        <span class="keyword">return</span> <span class="keyword">new</span> LocalManagedNameService();</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="meta">@Override</span></div><div class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">getProviderName</span><span class="params">()</span> </span>&#123;</div><div class="line">        <span class="keyword">return</span> <span class="string">"dnsljh"</span>;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="meta">@Override</span></div><div class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">getType</span><span class="params">()</span> </span>&#123;</div><div class="line">        <span class="keyword">return</span> <span class="string">"dns"</span>;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="title">LocalManagedNameServiceDescriptor</span><span class="params">()</span> </span>&#123;</div><div class="line">        System.out.println(<span class="string">"hello, you're in LocalManagedNameServiceDescriptor"</span>);</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+</li>
+</ol>
+<p><code>LocalManagedNameService</code>主要代码如下<br><figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div></pre></td><td class="code"><pre><div class="line"><span class="comment">/**</span></div><div class="line"> * Created by louz on 2016/12/15.</div><div class="line"> */</div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">LocalManagedNameService</span> <span class="keyword">implements</span> <span class="title">NameService</span> </span>&#123;</div><div class="line"></div><div class="line">    <span class="keyword">private</span> Map&lt;String, InetAddress&gt; managedAddresses = <span class="keyword">new</span> HashMap&lt;&gt;();</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="title">LocalManagedNameService</span><span class="params">()</span> </span>&#123;</div><div class="line">        <span class="keyword">try</span> &#123;</div><div class="line">            <span class="comment">// 此处可通过其他方式初始化managedAddresses</span></div><div class="line">            InetAddress address = InetAddress.getByName(<span class="string">"10.1.1.1"</span>);</div><div class="line">            managedAddresses.put(<span class="string">"mockhost"</span>, address);</div><div class="line">        &#125; <span class="keyword">catch</span> (UnknownHostException e) &#123;</div><div class="line">            e.printStackTrace();</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="meta">@Override</span></div><div class="line">    <span class="keyword">public</span> InetAddress[] lookupAllHostAddr(String s) <span class="keyword">throws</span> UnknownHostException &#123;</div><div class="line">        InetAddress inetAddress = managedAddresses.get(s);</div><div class="line">        <span class="keyword">if</span> (inetAddress == <span class="keyword">null</span>) &#123;</div><div class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> UnknownHostException();</div><div class="line">        &#125;</div><div class="line"></div><div class="line">        <span class="keyword">return</span> <span class="keyword">new</span> InetAddress[]&#123;inetAddress&#125;;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="meta">@Override</span></div><div class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">getHostByAddr</span><span class="params">(<span class="keyword">byte</span>[] bytes)</span> <span class="keyword">throws</span> UnknownHostException </span>&#123;</div><div class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> UnknownHostException(<span class="string">"method not implement yet"</span>);</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<ol>
+<li><p>在程序的启动参数上增加：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">-Dsun.net.spi.nameservice.provider.1=dns,dnsljh -Dsun.net.spi.nameservice.provider.2=default</div></pre></td></tr></table></figure>
+</li>
+<li><p>客户端示例</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">DnsLookUpTest</span> </span>&#123;</div><div class="line">    <span class="meta">@Test</span></div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">testLookup</span><span class="params">()</span> <span class="keyword">throws</span> UnknownHostException </span>&#123;</div><div class="line">        String googleHost = InetAddress.getByName(<span class="string">"www.google.com"</span>).getHostAddress();</div><div class="line">        System.out.println(googleHost);     <span class="comment">// www.google.com没有在managedAddress中，因此按默认方式通过外部DNS获取其对应ip</span></div><div class="line"></div><div class="line">        String mockhost = InetAddress.getByName(<span class="string">"mockhost"</span>).getHostAddress();</div><div class="line">        <span class="comment">// mockhost在managedAddress中，因此获取到其ip为10.1.1.1</span></div><div class="line">        assertThat(mockhost, is(<span class="string">"10.1.1.1"</span>));</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+</li>
+</ol>
+<h3 id="JDK解析XML"><a href="#JDK解析XML" class="headerlink" title="JDK解析XML"></a>JDK解析XML</h3><p><a href="http://www.open-open.com/lib/view/open1390528456226.html" target="_blank" rel="external">转 Java 语言的 XPath API</a></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://louz.github.io/2016/01/06/java-resource/" data-id="cixn1gs06001oj8zowp7zizes" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/JDK/">JDK</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2016/04/20/aws-howto/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          AWS入门
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2015/12/03/db2-howto/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">DB2常见问题</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/Flume/">Flume</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/HBase/">HBase</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/Hadoop/">Hadoop</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/Hexo/">Hexo</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/IE/">IE</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/JBoss/">JBoss</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/Java/">Java</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linux/">Linux</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/MS-Word/">MS Word</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/MySQL/">MySQL</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/QuickBuild/">QuickBuild</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/R/">R</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/Sqoop/">Sqoop</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/Zookeeper/">Zookeeper</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/ant/">ant</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/应用/">应用</a><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/应用/Markdown/">Markdown</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/应用/Sublime/">Sublime</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/应用/Windows/">Windows</a></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/">开发</a><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/开发/AWS/">AWS</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/BDD/">BDD</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/Hadoop/">Hadoop</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/JDK/">JDK</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/JVM/">JVM</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/Java/">Java</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/Kafka/">Kafka</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/Maven/">Maven</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/RESTFUL/">RESTFUL</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/Spring/">Spring</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/Tomcat/">Tomcat</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/docker/">docker</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/http/">http</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/代码质量/">代码质量</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/单元测试/">单元测试</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/数据库/">数据库</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/设计模式/">设计模式</a></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/杂谈/">杂谈</a><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/杂谈/移动工作站/">移动工作站</a></li></ul></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/AWS/">AWS</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CentOS/">CentOS</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Cucumber/">Cucumber</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/DB2/">DB2</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Design-Pattern/">Design Pattern</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Flume/">Flume</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/HBase-API/">HBase API</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/HBase-Shell/">HBase Shell</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/HBase配置/">HBase配置</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/HDFS/">HDFS</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Hadoop/">Hadoop</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Hexo/">Hexo</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/IE/">IE</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/JBoss/">JBoss</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/JDK/">JDK</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/JNDI/">JNDI</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/JVM/">JVM</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Java/">Java</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux/">Linux</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux-Shell/">Linux Shell</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Markdown/">Markdown</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Maven/">Maven</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/MySQL/">MySQL</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/PMD/">PMD</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/QuickBuild/">QuickBuild</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/R/">R</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Restful/">Restful</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Scala/">Scala</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Spark/">Spark</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Spring/">Spring</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Sqoop/">Sqoop</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Sublime/">Sublime</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/WTG/">WTG</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Zookeeper/">Zookeeper</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ant/">ant</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/checkstyle/">checkstyle</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/docker/">docker</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/dockerfile/">dockerfile</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hexo/">hexo</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/http/">http</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/jersey/">jersey</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/kafka/">kafka</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/maven/">maven</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/redis/">redis</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/spark/">spark</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/tomcat/">tomcat</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/word技巧/">word技巧</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/中文/">中文</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/代码质量/">代码质量</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/单元测试/">单元测试</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/同步/">同步</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/大数据/">大数据</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/并发编程/">并发编程</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/正则表达式/">正则表达式</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/测试覆盖率/">测试覆盖率</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/设计模式/">设计模式</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/AWS/" style="font-size: 10px;">AWS</a> <a href="/tags/CentOS/" style="font-size: 10px;">CentOS</a> <a href="/tags/Cucumber/" style="font-size: 10px;">Cucumber</a> <a href="/tags/DB2/" style="font-size: 10px;">DB2</a> <a href="/tags/Design-Pattern/" style="font-size: 10px;">Design Pattern</a> <a href="/tags/Flume/" style="font-size: 10px;">Flume</a> <a href="/tags/HBase-API/" style="font-size: 10px;">HBase API</a> <a href="/tags/HBase-Shell/" style="font-size: 10px;">HBase Shell</a> <a href="/tags/HBase配置/" style="font-size: 10px;">HBase配置</a> <a href="/tags/HDFS/" style="font-size: 10px;">HDFS</a> <a href="/tags/Hadoop/" style="font-size: 13.33px;">Hadoop</a> <a href="/tags/Hexo/" style="font-size: 10px;">Hexo</a> <a href="/tags/IE/" style="font-size: 10px;">IE</a> <a href="/tags/JBoss/" style="font-size: 10px;">JBoss</a> <a href="/tags/JDK/" style="font-size: 10px;">JDK</a> <a href="/tags/JNDI/" style="font-size: 10px;">JNDI</a> <a href="/tags/JVM/" style="font-size: 10px;">JVM</a> <a href="/tags/Java/" style="font-size: 10px;">Java</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/Linux-Shell/" style="font-size: 10px;">Linux Shell</a> <a href="/tags/Markdown/" style="font-size: 10px;">Markdown</a> <a href="/tags/Maven/" style="font-size: 13.33px;">Maven</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/PMD/" style="font-size: 10px;">PMD</a> <a href="/tags/QuickBuild/" style="font-size: 10px;">QuickBuild</a> <a href="/tags/R/" style="font-size: 10px;">R</a> <a href="/tags/Restful/" style="font-size: 10px;">Restful</a> <a href="/tags/Scala/" style="font-size: 10px;">Scala</a> <a href="/tags/Spark/" style="font-size: 10px;">Spark</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Sqoop/" style="font-size: 10px;">Sqoop</a> <a href="/tags/Sublime/" style="font-size: 10px;">Sublime</a> <a href="/tags/WTG/" style="font-size: 10px;">WTG</a> <a href="/tags/Zookeeper/" style="font-size: 13.33px;">Zookeeper</a> <a href="/tags/ant/" style="font-size: 10px;">ant</a> <a href="/tags/checkstyle/" style="font-size: 10px;">checkstyle</a> <a href="/tags/docker/" style="font-size: 16.67px;">docker</a> <a href="/tags/dockerfile/" style="font-size: 10px;">dockerfile</a> <a href="/tags/hexo/" style="font-size: 10px;">hexo</a> <a href="/tags/http/" style="font-size: 10px;">http</a> <a href="/tags/jersey/" style="font-size: 10px;">jersey</a> <a href="/tags/kafka/" style="font-size: 10px;">kafka</a> <a href="/tags/maven/" style="font-size: 10px;">maven</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/spark/" style="font-size: 10px;">spark</a> <a href="/tags/tomcat/" style="font-size: 10px;">tomcat</a> <a href="/tags/word技巧/" style="font-size: 10px;">word技巧</a> <a href="/tags/中文/" style="font-size: 10px;">中文</a> <a href="/tags/代码质量/" style="font-size: 10px;">代码质量</a> <a href="/tags/单元测试/" style="font-size: 10px;">单元测试</a> <a href="/tags/同步/" style="font-size: 10px;">同步</a> <a href="/tags/大数据/" style="font-size: 20px;">大数据</a> <a href="/tags/并发编程/" style="font-size: 10px;">并发编程</a> <a href="/tags/正则表达式/" style="font-size: 10px;">正则表达式</a> <a href="/tags/测试覆盖率/" style="font-size: 10px;">测试覆盖率</a> <a href="/tags/设计模式/" style="font-size: 10px;">设计模式</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/10/">October 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/09/">September 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/08/">August 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/07/">July 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/06/">June 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/04/">April 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/01/">January 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/12/">December 2015</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/11/">November 2015</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/09/">September 2015</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/06/">June 2015</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/05/">May 2015</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/04/">April 2015</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/02/">February 2015</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/11/">November 2014</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/08/">August 2014</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/06/">June 2014</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/05/">May 2014</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/02/">February 2014</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2016/10/17/spark-faq/">Spark常见问题</a>
+          </li>
+        
+          <li>
+            <a href="/2016/10/08/scala-learning/">Scala学习笔记</a>
+          </li>
+        
+          <li>
+            <a href="/2016/10/05/hexo-theme-modify/">Hexo Markdown语法效果</a>
+          </li>
+        
+          <li>
+            <a href="/2016/09/30/spring-howto/">Spring常见问题</a>
+          </li>
+        
+          <li>
+            <a href="/2016/09/29/test-coverage/">测试覆盖率配置</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2017 Jason Lu<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  <link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+  <script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>

@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>Jason&#39;s Blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta property="og:type" content="website">
+<meta property="og:title" content="Jason's Blog">
+<meta property="og:url" content="http://louz.github.io/page/4/index.html">
+<meta property="og:site_name" content="Jason's Blog">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Jason's Blog">
+  
+    <link rel="alternate" href="/atom.xml" title="Jason&#39;s Blog" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  <link rel="stylesheet" href="/css/style.css">
+  
+
+</head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Jason&#39;s Blog</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" results="0" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://louz.github.io"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main">
+  
+    <article id="post-ant-howto" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2015/04/14/ant-howto/" class="article-date">
+  <time datetime="2015-04-14T12:18:16.000Z" itemprop="datePublished">2015-04-14</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/ant/">ant</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2015/04/14/ant-howto/">ant常见问题</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="如何通过scp将指定文件上传到服务器"><a href="#如何通过scp将指定文件上传到服务器" class="headerlink" title="如何通过scp将指定文件上传到服务器"></a>如何通过scp将指定文件上传到服务器</h2><p>主要使用<code>scp</code>任务，需要先下载<code>jsch</code>的jar包，例子如下：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">&lt;target name=&quot;scp.war&quot;&gt;</div><div class="line">    &lt;scp localFile=&quot;a.war&quot; remoteTofile=&quot;remoteuser@remoteHost:/path/to/a.war&quot; password=&quot;password&quot;/&gt;</div><div class="line">&lt;/target&gt;</div></pre></td></tr></table></figure></p>
+<p>然后运行：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">ant -lib jsch-xxx.jar scp.war</div></pre></td></tr></table></figure></p>
+<p>正常会报一个<code>Unknown host</code>的错误，主要是因为目标机器在本机上没有finger，可通过以下方法解决：利用某台linux服务器，向目标机器发送<code>ssh</code>登录命令，然后在<code>~/.ssh</code>目录下把<code>known_hosts</code>文件中关于目标机器的信息串copy到本地的用户目录下的<code>.ssh</code>目录中的<code>known_hosts</code>文件中，windows下创建<code>.ssh</code>目录需要在命令行执行<code>mkdir .ssh</code>命令</p>
+<hr>
+<h2 id="利用pom-xml做依赖管理，使用ant下载依赖包"><a href="#利用pom-xml做依赖管理，使用ant下载依赖包" class="headerlink" title="利用pom.xml做依赖管理，使用ant下载依赖包"></a>利用pom.xml做依赖管理，使用ant下载依赖包</h2><p>背景：构建服务器无法连通外网，也没有maven的私服，但又想使用pom.xml做包依赖管理<br>解决思路：通过<code>maven-ant-tasks</code>把依赖包下载到项目里<br>具体方法：</p>
+<ul>
+<li>下载<code>maven-ant-tasks.jar</code>放到本地，具体下载地址请见 <a href="http://maven.apache.org/ant-tasks/" target="_blank" rel="external">http://maven.apache.org/ant-tasks/</a></li>
+<li>在<code>build.xml</code>中引入相关task<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div></pre></td><td class="code"><pre><div class="line">&lt;project xmlns:artifact=&quot;antlib:org.apache.maven.artifact.ant&quot;&gt;</div><div class="line">    &lt;property name=&quot;maven-ant-jar.path&quot; value=&quot;path/to/maven-ant-tasks.jar&quot;/&gt;</div><div class="line">    &lt;path id=&quot;maven-ant-tasks.classpath&quot; path=&quot;$&#123;maven-ant-jar.path&#125;&quot;/&gt;</div><div class="line">    &lt;typedef resource=&quot;org/apache/maven/artifact/ant/antlib.xml&quot; </div><div class="line">             uri=&quot;antlib:org.apache.maven.artifact.ant&quot;</div><div class="line">             classpathref=&quot;maven-ant-tasks.classpath&quot;/&gt;</div><div class="line"></div><div class="line">    &lt;!-- usescope 属性有包含关系，关系如下：</div><div class="line"></div><div class="line">        compile - Includes scopes compile, system and provided</div><div class="line">        runtime - Includes scopes compile and runtime</div><div class="line">        test - Includes scopes system, provided, compile, runtime and test</div><div class="line">    --&gt;</div><div class="line">    &lt;artifact:dependencies filesetId=&quot;dependency.main.fileset&quot; usescope=&quot;runtime&quot;&gt;</div><div class="line">        &lt;pom file=&quot;pom.xml&quot;/&gt;</div><div class="line">    &lt;/artifact:dependencies&gt;</div><div class="line"></div><div class="line">    &lt;!-- scopes属性没有包含关系，需要显式指定包含的范围  --&gt;</div><div class="line">    &lt;artifact:dependencies filesetId=&quot;dependency.test.fileset&quot; scopes=&quot;test&quot;&gt;</div><div class="line">        &lt;pom file=&quot;pom.xml&quot;/&gt;</div><div class="line">    &lt;/artifact:dependencies&gt;</div><div class="line"></div><div class="line">    &lt;target name=&quot;jars.update&quot;&gt;</div><div class="line">        &lt;copy todir=&quot;$&#123;lib.main.dir&#125;&quot;&gt;</div><div class="line">            &lt;fileset rerid=&quot;dependency.main.fileset&quot;/&gt;</div><div class="line">            &lt;mapper type=&quot;flatten&quot;/&gt;   </div><div class="line">        &lt;/copy&gt;</div><div class="line"></div><div class="line">        &lt;copy todir=&quot;$&#123;lib.test.dir&#125;&quot;&gt;</div><div class="line">            &lt;fileset rerid=&quot;dependency.test.fileset&quot;/&gt;</div><div class="line">            &lt;mapper type=&quot;flatten&quot;/&gt;   </div><div class="line">        &lt;/copy&gt;</div><div class="line">    &lt;/target&gt;</div><div class="line">&lt;/project&gt;</div></pre></td></tr></table></figure>
+</li>
+</ul>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://louz.github.io/2015/04/14/ant-howto/" data-id="cixn1grxn0000j8zoz80o7lsv" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ant/">ant</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-R-howto" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2015/04/07/R-howto/" class="article-date">
+  <time datetime="2015-04-07T01:08:52.000Z" itemprop="datePublished">2015-04-07</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/R/">R</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2015/04/07/R-howto/">R-howto</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="R培训"><a href="#R培训" class="headerlink" title="R培训"></a>R培训</h2><p>商业理解和部署很重要</p>
+<hr>
+<h2 id="数据分析的基本步骤"><a href="#数据分析的基本步骤" class="headerlink" title="数据分析的基本步骤"></a>数据分析的基本步骤</h2><ol>
+<li>明确要解决的问题类型（是要分类、发现关联还是预测），以确定使用哪种算法<br> a. 分类（有监督）：决策树、逻辑回归（二分）<pre><code>逻辑回归的解析和应用场景：http://wenku.baidu.com/link?url=Q36Op3RXf3qR2-MMejmUC8r99RzXeVlp5QYfRNy2NqqeRioao9yWcj3_wa0QHPS1m9WU0MioQiMwdaiCbW2sZ1ykQ4j_tKz_tEFnWx4fI-m
+</code></pre> b. 关联关系：关联规则（Aprior算法，基于投票或交易数据）、协同过滤（基于评分数据）<br> c. 预测：线性回归<br> d. 聚类（无监督）：</li>
+<li>算法思路<br> a. 确定目标函数<br> b. 模型评价</li>
+</ol>
+<hr>
+<p>##rJava库的装载</p>
+<ol>
+<li>设置，在Path变量中添加项<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">%R_Home%\bin\x64</div><div class="line">或</div><div class="line">%R_Home%\bin\x86</div><div class="line">取决于系统是64位还是32位。</div></pre></td></tr></table></figure>
+</li>
+</ol>
+<p>安装rJava这个用于R与Java交互的Packages后，还需在Path变量中添加项<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">%R_Home%\library\rJava\jri</div></pre></td></tr></table></figure></p>
+<ol>
+<li><strong>重要</strong>，JAVA_HOME要设置为jre的目录，设成JDK的不行！！</li>
+</ol>
+<hr>
+<h2 id="图形化交互Rattle"><a href="#图形化交互Rattle" class="headerlink" title="图形化交互Rattle"></a>图形化交互Rattle</h2><p>使用<code>install.packages(&#39;rattle&#39;)</code>进行安装<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">&gt; library(rattle)</div><div class="line">&gt; rattle()</div></pre></td></tr></table></figure></p>
+<hr>
+<h2 id="通过excel导入数据"><a href="#通过excel导入数据" class="headerlink" title="通过excel导入数据"></a>通过excel导入数据</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"># 先安装库并引用</div><div class="line">&gt;install.packages(&apos;xlsx&apos;)</div><div class="line">&gt;library(xlsx)</div><div class="line"></div><div class="line"># 读取excel文件（适用于excel2007以上）</div><div class="line">&gt; x=read.xlsx(&apos;F:/tmp/R/Rtest.xlsx&apos;, 1)</div><div class="line">&gt; str(x)</div></pre></td></tr></table></figure>
+<hr>
+<h2 id="判断线性回归方程的优度（贡献率）"><a href="#判断线性回归方程的优度（贡献率）" class="headerlink" title="判断线性回归方程的优度（贡献率）"></a>判断线性回归方程的优度（贡献率）</h2><p>最重要的标准：R平方</p>
+<h2 id="步骤"><a href="#步骤" class="headerlink" title="步骤"></a>步骤</h2><p>利用散点图先大致观察变量和响应变量的关系，再逐步增、减变量查看结果</p>
+<hr>
+<h2 id="决策树"><a href="#决策树" class="headerlink" title="决策树"></a>决策树</h2><p><strong>分裂变量选择的原则</strong>: 选择该变量后，分裂后的子集分布和原来的差异明显；<br><strong>树停止分裂的条件</strong>: 1. 层数超过阈值；2. 子集数据小于阈值；3. 子集各类比例超过阈值<br><strong>选取变量的手段</strong>：通过信息熵——熵越大，不确定性越大（最大为1）；熵越小，不确定性越小（最小为0）。每个变量计算条件熵，然后用总信息熵-条件熵，差值最大的，表示使用该变量进行分裂之后，不确定程度降低得最多（即越能确定），所以选取该条件作为该层的节点<br><strong>连续性的变量</strong>：计算所有值两两之间的切分点，每个区间转换成一个类型值，然后按上述的原则计算各个切分点的信息熵。对于样本数量很多的时候，可以按每个n个切分点算一个熵</p>
+<p><strong>lift值</strong>：就是使用该策略时的响应数/随机策略时的响应数</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://louz.github.io/2015/04/07/R-howto/" data-id="cixn1grxu0001j8zo2o9xgzdm" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/R/">R</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-maven-faq" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2015/02/17/maven-faq/" class="article-date">
+  <time datetime="2015-02-17T02:42:06.000Z" itemprop="datePublished">2015-02-17</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/开发/">开发</a>►<a class="article-category-link" href="/categories/开发/Maven/">Maven</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2015/02/17/maven-faq/">Maven常见问题</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="如何设置代码编译版本"><a href="#如何设置代码编译版本" class="headerlink" title="如何设置代码编译版本"></a>如何设置代码编译版本</h2><p>增加如下配置<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line">&lt;build&gt;</div><div class="line">    &lt;plugins&gt;</div><div class="line">        ...</div><div class="line">        &lt;plugin&gt;</div><div class="line">            &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;</div><div class="line">            &lt;artifactId&gt;maven-compiler-plugin&lt;/artifactId&gt;</div><div class="line">            &lt;version&gt;3.3&lt;/version&gt;</div><div class="line">            &lt;configuration&gt;</div><div class="line">                &lt;source&gt;1.7&lt;/source&gt;    </div><div class="line">                &lt;target&gt;1.7&lt;/target&gt;</div><div class="line">            &lt;/configuration&gt;</div><div class="line">        &lt;/plugin&gt;</div><div class="line">    &lt;/plugins&gt;</div><div class="line">&lt;/build&gt;</div></pre></td></tr></table></figure></p>
+<h2 id="如何配置jetty插件"><a href="#如何配置jetty插件" class="headerlink" title="如何配置jetty插件"></a>如何配置jetty插件</h2><p>在<code>plugins</code>段增加配置<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">&lt;build&gt;</div><div class="line">    &lt;plugins&gt;</div><div class="line">        &lt;plugin&gt;</div><div class="line">            &lt;groupId&gt;org.eclipse.jetty&lt;/groupId&gt;</div><div class="line">            &lt;artifactId&gt;jetty-maven-plugin&lt;/artifactId&gt;</div><div class="line">            &lt;version&gt;9.3.0.M1&lt;/version&gt;</div><div class="line">        &lt;/plugin&gt;</div><div class="line">    &lt;/plugins&gt;</div><div class="line">&lt;/build&gt;</div></pre></td></tr></table></figure></p>
+<p>然后执行<code>mvn jetty:run</code>即可运行</p>
+<h2 id="使用jetty-run出现Timeout-scan-annotations的解决方法"><a href="#使用jetty-run出现Timeout-scan-annotations的解决方法" class="headerlink" title="使用jetty:run出现Timeout scan annotations的解决方法"></a>使用<code>jetty:run</code>出现<code>Timeout scan annotations</code>的解决方法</h2><p><strong>现象</strong>：<code>mvn jetty:run</code>之后，出现类似错误：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">java.lang.Exception: Timeout scanning annotations</div><div class="line">    at org.eclipse.jetty.annotations.AnnotationConfiguration.scanForAnnotations(AnnotationConfiguration.java:576)</div><div class="line">    at org.eclipse.jetty.annotations.AnnotationConfiguration.configure(AnnotationConfiguration.java:446)</div><div class="line">    at org.eclipse.jetty.webapp.WebAppContext.configure(WebAppContext.java:473)</div><div class="line">    at org.eclipse.jetty.webapp.WebAppContext.startContext(WebAppContext.java:1331)</div><div class="line">    ......</div></pre></td></tr></table></figure>
+<p>但使用 <code>mvn clean package</code>，将打包后的war包放到tomcat下能正常运行</p>
+<p><strong>解决方法</strong>：增加jetty启动时对annotations的最长扫描时间<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">mvn jetty:run -Dorg.eclipse.jetty.annotations.maxWait=180</div></pre></td></tr></table></figure></p>
+<hr>
+<h2 id="解决编码问题"><a href="#解决编码问题" class="headerlink" title="解决编码问题"></a>解决编码问题</h2><p><strong>问题1:</strong>多个plugin，例如maven-resources、maven-compile、maven-site等都需要设置encoding，解决方案：在<code>pom.xml</code>中设置一个属性：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="tag">&lt;<span class="name">properties</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">project.build.sourceEncoding</span>&gt;</span>UTF-8<span class="tag">&lt;/<span class="name">project.build.sourceEncoding</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">properties</span>&gt;</span></div></pre></td></tr></table></figure>
+<p>详见：<a href="http://maven.apache.org/general.html#encoding-warning" target="_blank" rel="external">http://maven.apache.org/general.html#encoding-warning</a></p>
+<p><strong>问题2:</strong>单元测试时，控制台输出的中文乱码，原因是<code>maven-surefire-plugin</code>使用的编码和控制台的不一致导致（git/cygwin用户的是UTF-8, windows命令行用的是GBK），解决方案：</p>
+<p>首先在<code>pom.xml</code>设置（假设统一使用<code>UTF-8</code>）<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line"><span class="tag">&lt;<span class="name">build</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">plugins</span>&gt;</span></div><div class="line">        ......</div><div class="line">        <span class="tag">&lt;<span class="name">plugin</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.apache.maven.plugins<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>maven-surefire-plugin<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">version</span>&gt;</span>2.18.1<span class="tag">&lt;/<span class="name">version</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">configuration</span>&gt;</span></div><div class="line">                <span class="tag">&lt;<span class="name">argLine</span>&gt;</span>-Dfile.encoding=UTF-8<span class="tag">&lt;/<span class="name">argLine</span>&gt;</span></div><div class="line">            <span class="tag">&lt;/<span class="name">configuration</span>&gt;</span></div><div class="line">        <span class="tag">&lt;/<span class="name">plugin</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">plugins</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">build</span>&gt;</span></div></pre></td></tr></table></figure></p>
+<p>然后在执行命令<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">mvn -Dfile.encoding=UTF-8 clean test</div></pre></td></tr></table></figure></p>
+<p>原则就是保证两者使用的编码一致</p>
+<hr>
+<h2 id="如何禁止cobertura-cobertura-integration-test运行"><a href="#如何禁止cobertura-cobertura-integration-test运行" class="headerlink" title="如何禁止cobertura:cobertura-integration-test运行"></a>如何禁止cobertura:cobertura-integration-test运行</h2><p>cobertura主要用于产生代码测试覆盖率的报告，可以配置到<code>reporting</code>节点，在site的生命周期中调用。但在site的生命周期中默认会先后调用<code>cobertura:cobertura</code>和<code>cobertura:cobertura-integration-test</code>两个goal，在运行<code>cobertura:cobertura-integration-test</code>的时候一般需要将<code>cobertura.jar</code>放到war包中，如果要实现该功能的话，要么把<code>cobertura.jar</code>加到依赖里，要么按照官网需要在很多地方做配置。考虑到集成测试生成的覆盖率没有太大意义，因此可以设置在<code>site</code>生命周期里不运行<code>cobertura:cobertura-integration-test</code>，设置如下：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line">&lt;reporting&gt;</div><div class="line">    &lt;plugins&gt;</div><div class="line">        ...</div><div class="line">        &lt;plugin&gt;</div><div class="line">            &lt;groupId&gt;org.codehaus.mojo&lt;/groupId&gt;</div><div class="line">            &lt;artifactId&gt;cobertura-maven-plugin&lt;/artifactId&gt;</div><div class="line">            &lt;version&gt;2.7&lt;/version&gt;</div><div class="line"></div><div class="line">            &lt;!-- 关键一步 --&gt;</div><div class="line">            &lt;reportSets&gt;</div><div class="line">                &lt;reportSet&gt;</div><div class="line">                    &lt;reports&gt;</div><div class="line">                        &lt;report&gt;cobertura&lt;/report&gt;</div><div class="line">                    &lt;/reports&gt;</div><div class="line">                &lt;/reportSet&gt;</div><div class="line">            &lt;/reportSets&gt;</div><div class="line">        &lt;/plugin&gt;</div><div class="line">    &lt;/plugins&gt;</div><div class="line">&lt;/reporting&gt;</div></pre></td></tr></table></figure></p>
+<hr>
+<h2 id="如何集成Jboss进行集成测试"><a href="#如何集成Jboss进行集成测试" class="headerlink" title="如何集成Jboss进行集成测试"></a>如何集成Jboss进行集成测试</h2><p>思路主要来自：<a href="http://www.infoq.com/cn/news/2011/03/xxb-maven-5-integration-test/" target="_blank" rel="external">http://www.infoq.com/cn/news/2011/03/xxb-maven-5-integration-test/</a> Maven实战（五）——自动化Web应用集成测试</p>
+<p>首先需要在测试前把应用服务器启动起来，并把war包部署到服务器上，这个主要是把<code>jboss-as:start</code>和<code>jboss-as:deploy</code>这两个goal绑定到<code>pre-integration-test</code>阶段；另外在测试完之后要把服务器停掉，这个主要把<code>jboss-as:shutdown</code>绑定到<code>post-integration-test</code>阶段</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div></pre></td><td class="code"><pre><div class="line">&lt;build&gt;</div><div class="line">    &lt;plugin&gt;</div><div class="line">        &lt;groupId&gt;org.jboss.as.plugins&lt;/groupId&gt;</div><div class="line">        &lt;artifactId&gt;jboss-as-maven-plugin&lt;/artifactId&gt;</div><div class="line">        &lt;version&gt;7.7.Final&lt;/version&gt;</div><div class="line">        &lt;executions&gt;</div><div class="line">            &lt;excution&gt;</div><div class="line">                &lt;id&gt;jboss-start-deploy&lt;/id&gt;</div><div class="line">                &lt;phase&gt;pre-integration-test&lt;/phase&gt;</div><div class="line">                &lt;goals&gt;</div><div class="line">                    &lt;goal&gt;start&lt;/goal&gt;</div><div class="line">                    &lt;goal&gt;deploy&lt;/goal&gt;</div><div class="line">                &lt;/goals&gt;</div><div class="line">                &lt;configuration&gt;</div><div class="line">                    &lt;name&gt;$&#123;project.artifactId&#125;.$&#123;project.packaging&#125;&lt;/name&gt;</div><div class="line">                &lt;/configuration&gt;</div><div class="line">            &lt;/excution&gt;</div><div class="line">            &lt;excution&gt;</div><div class="line">                &lt;id&gt;jboss-shutdown&lt;/id&gt;</div><div class="line">                &lt;phase&gt;post-integration-test&lt;/phase&gt;</div><div class="line">                &lt;goals&gt;</div><div class="line">                    &lt;goal&gt;shtudown&lt;/goal&gt;</div><div class="line">                &lt;/goals&gt;</div><div class="line">            &lt;/excution&gt;</div><div class="line">        &lt;/executions&gt;</div><div class="line">    &lt;/plugin&gt;</div><div class="line">&lt;/build&gt;</div></pre></td></tr></table></figure>
+<p>另外，需要将集成测试的类命名为不含有<code>Test</code>（例如改为以<code>*IT.java</code>命名），否则在单元测试阶段会执行这些测试案例，之后需要将这些测试的执行绑定到<code>integration-test</code>阶段：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div></pre></td><td class="code"><pre><div class="line">&lt;build&gt;</div><div class="line">    &lt;plugin&gt;</div><div class="line">        &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;</div><div class="line">        &lt;artifactId&gt;maven-surefire-plugin&lt;/artifactId&gt;</div><div class="line">        &lt;version&gt;2.18.1&lt;/version&gt;</div><div class="line">        &lt;executions&gt;</div><div class="line">            &lt;excution&gt;</div><div class="line">                &lt;id&gt;run-integration-test&lt;/id&gt;</div><div class="line">                &lt;phase&gt;integration-test&lt;/phase&gt;</div><div class="line">                &lt;goals&gt;</div><div class="line">                    &lt;goal&gt;test&lt;/goal&gt;</div><div class="line">                &lt;/goals&gt;</div><div class="line">                &lt;configuration&gt;</div><div class="line">                    &lt;includes&gt;</div><div class="line">                        &lt;include&gt;**/*IT.java&lt;/include&gt;</div><div class="line">                    &lt;/includes&gt;</div><div class="line">                &lt;/configuration&gt;</div><div class="line">            &lt;/excution&gt;</div><div class="line">        &lt;/executions&gt;</div><div class="line">    &lt;/plugin&gt;</div><div class="line">&lt;/build&gt;</div></pre></td></tr></table></figure></p>
+<hr>
+<h2 id="是否可以在setting-xml中配置distributeManager"><a href="#是否可以在setting-xml中配置distributeManager" class="headerlink" title="是否可以在setting.xml中配置distributeManager"></a>是否可以在setting.xml中配置distributeManager</h2><p>答案是：否，只能在pom.xml中配置，但可以通过<code>profile</code>方式进行灵活配置</p>
+<hr>
+<h2 id="如何在每次构建出来的war包名中包含时间信息"><a href="#如何在每次构建出来的war包名中包含时间信息" class="headerlink" title="如何在每次构建出来的war包名中包含时间信息"></a>如何在每次构建出来的war包名中包含时间信息</h2><p>增加如下属性:<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">&lt;maven.build.timestamp.format&gt;yyyyMMddHHmmss&lt;/maven.build.timestamp.format&gt;</div></pre></td></tr></table></figure></p>
+<p>然后在包信息中利用<code>${maven.build.timestamp}</code>属性即可，但要注意该属性得到的时间是没有时区信息的</p>
+<hr>
+<h2 id="在MANIFEST-MF文件中增加自定义信息"><a href="#在MANIFEST-MF文件中增加自定义信息" class="headerlink" title="在MANIFEST.MF文件中增加自定义信息"></a>在MANIFEST.MF文件中增加自定义信息</h2><p>配置如下：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line">&lt;plugin&gt;</div><div class="line">    &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;</div><div class="line">    &lt;artifactId&gt;maven-war-plugin&lt;/artifactId&gt;</div><div class="line">    &lt;version&gt;2.6&lt;/version&gt;</div><div class="line">    &lt;configuration&gt;</div><div class="line">        &lt;archive&gt;</div><div class="line">            &lt;manifestEntries&gt;</div><div class="line">                &lt;Build-Number&gt;$&#123;versionNumber&#125;&lt;/Build-Number&gt; </div><div class="line">                &lt;Built-By&gt;$&#123;user.name&#125;&lt;/Built-By&gt;</div><div class="line">            &lt;/manifestEntries&gt;</div><div class="line">        &lt;/archive&gt;</div><div class="line">    &lt;/configuration&gt;</div><div class="line">&lt;/plugin&gt;</div></pre></td></tr></table></figure></p>
+<hr>
+<h2 id="如何将依赖包都打到jar里"><a href="#如何将依赖包都打到jar里" class="headerlink" title="如何将依赖包都打到jar里"></a>如何将依赖包都打到jar里</h2><p>方法：使用<code>maven-assembly-plugin</code>，主页为: <a href="http://maven.apache.org/plugins/maven-assembly-plugin/" target="_blank" rel="external">http://maven.apache.org/plugins/maven-assembly-plugin/</a><br>在<code>pom.xml</code>中添加如下配置:<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div></pre></td><td class="code"><pre><div class="line">&lt;build&gt;</div><div class="line">    &lt;plugins&gt;</div><div class="line">        &lt;plugin&gt;</div><div class="line">            &lt;artifactId&gt;maven-assembly-plugin&lt;/artifactId&gt;</div><div class="line">            &lt;version&gt;2.6&lt;/version&gt;</div><div class="line">            &lt;executions&gt;</div><div class="line">                &lt;execution&gt;</div><div class="line">                    &lt;id&gt;xxx&lt;id&gt;</div><div class="line">                    &lt;phase&gt;package&lt;/phase&gt;</div><div class="line">                    &lt;goals&gt;</div><div class="line">                        &lt;goal&gt;single&lt;/goal&gt;</div><div class="line">                    &lt;/goals&gt;</div><div class="line">                    &lt;configuration&gt;</div><div class="line">                        &lt;descriptors&gt;</div><div class="line">                            &lt;descriptor&gt;assembly.xml&lt;/descriptor&gt; &lt;!-- 具体组装的描述文件 --&gt;</div><div class="line">                        &lt;/descriptors&gt;</div><div class="line">                    &lt;/configuration&gt;</div><div class="line">                &lt;/execution&gt;</div><div class="line">            &lt;/executions&gt;</div><div class="line">        &lt;/plugin&gt;</div><div class="line">    &lt;/plugins&gt;</div><div class="line">&lt;/build&gt;</div></pre></td></tr></table></figure></p>
+<p>根据上面配置的路径，在同一层目录新建<code>assembly.xml</code><br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div></pre></td><td class="code"><pre><div class="line">&lt;assembly xmlns=&quot;http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.3&quot; xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot;</div><div class="line">  xsi:schemaLocation=&quot;http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.3 http://maven.apache.org/xsd/assembly-1.1.3.xsd&quot;&gt;</div><div class="line">  &lt;id&gt;xxx&lt;/id&gt;  &lt;!-- 这个会附加到最终构件的文件名后面 --&gt;</div><div class="line">  &lt;formats&gt;</div><div class="line">    &lt;format&gt;jar&lt;/format&gt;</div><div class="line">  &lt;/formats&gt;</div><div class="line">  &lt;includeBaseDirectory&gt;false&lt;/includeBaseDirectory&gt;  </div><div class="line">  </div><div class="line">  &lt;fileSets&gt;</div><div class="line">    &lt;fileSet&gt;</div><div class="line">        &lt;outputDirectory&gt;/&lt;/outputDirectory&gt;</div><div class="line">        &lt;directory&gt;target/classes&lt;/directory&gt;   &lt;!-- 将target/classes目录下的所有文件到打包到根目录下 --&gt;</div><div class="line">    &lt;/fileSet&gt;</div><div class="line">  &lt;/fileSets&gt;</div><div class="line">  </div><div class="line">  &lt;dependencySets&gt;</div><div class="line">    &lt;dependencySet&gt;</div><div class="line">      &lt;outputDirectory&gt;lib&lt;/outputDirectory&gt; &lt;!-- 放到压缩包里的lib目录  --&gt;</div><div class="line">      &lt;scope&gt;runtime&lt;/scope&gt;  &lt;!-- 选取runtime范围的依赖包 --&gt;</div><div class="line">      &lt;useProjectArtifact&gt;false&lt;/useProjectArtifact&gt;   &lt;!-- 是否将构建出来的jar包也放到依赖里，默认是true --&gt;</div><div class="line">    &lt;/dependencySet&gt;   </div><div class="line">  &lt;/dependencySets&gt;   </div><div class="line">&lt;/assembly&gt;</div></pre></td></tr></table></figure></p>
+<p><code>assembly.xml</code>可用配置项详见: <a href="http://maven.apache.org/plugins/maven-assembly-plugin/assembly.html" target="_blank" rel="external">http://maven.apache.org/plugins/maven-assembly-plugin/assembly.html</a></p>
+<p>打包的最终结果是所有<strong>依赖包</strong>以及<strong>本身的包</strong>都会打到压缩包的lib目录中</p>
+<p>如果只是想把项目依赖的class文件都打到jar包里，按以下配置即可：<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line"><span class="tag">&lt;<span class="name">build</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">plugins</span>&gt;</span></div><div class="line">      <span class="tag">&lt;<span class="name">plugin</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>maven-assembly-plugin<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">version</span>&gt;</span>2.6<span class="tag">&lt;/<span class="name">version</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">configuration</span>&gt;</span></div><div class="line">                <span class="tag">&lt;<span class="name">descriptorRefs</span>&gt;</span></div><div class="line">                    <span class="tag">&lt;<span class="name">descriptorRef</span>&gt;</span>jar-with-dependencies<span class="tag">&lt;/<span class="name">descriptorRef</span>&gt;</span></div><div class="line">                <span class="tag">&lt;/<span class="name">descriptorRefs</span>&gt;</span></div><div class="line">            <span class="tag">&lt;/<span class="name">configuration</span>&gt;</span></div><div class="line">        <span class="tag">&lt;/<span class="name">plugin</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">plugins</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">build</span>&gt;</span></div></pre></td></tr></table></figure></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://louz.github.io/2015/02/17/maven-faq/" data-id="cixn1gs13002oj8zov9s2cg1k" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Maven/">Maven</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-jersey-stepbystep" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2015/02/16/jersey-stepbystep/" class="article-date">
+  <time datetime="2015-02-16T07:59:32.000Z" itemprop="datePublished">2015-02-16</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/开发/">开发</a>►<a class="article-category-link" href="/categories/开发/RESTFUL/">RESTFUL</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2015/02/16/jersey-stepbystep/">jersey-stepbystep</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="创建框架"><a href="#创建框架" class="headerlink" title="创建框架"></a>创建框架</h2><p>执行命令，创建一个最基础的应用脚手架<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">mvn archetype:generate -DarchetypeArtifactId=jersey-quickstart-webapp </div><div class="line">                -DarchetypeGroupId=org.glassfish.jersey.archetypes -DinteractiveMode=false </div><div class="line">                -DgroupId=com.example -DartifactId=simple-service-webapp -Dpackage=com.example </div><div class="line">                -DarchetypeVersion=2.16</div></pre></td></tr></table></figure></p>
+<p>该脚手架使用的是servlet 2.5，主要关注两个地方：</p>
+<ol>
+<li><p><code>web.xml</code>要声明入口的servlet以及要扫描的资源</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line">&lt;web-app version=&quot;2.5&quot; xmlns=&quot;http://java.sun.com/xml/ns/javaee&quot; xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot; xsi:schemaLocation=&quot;http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd&quot;&gt;</div><div class="line">    &lt;servlet&gt;</div><div class="line">        &lt;servlet-name&gt;Jersey Web Application&lt;/servlet-name&gt;</div><div class="line">        &lt;servlet-class&gt;org.glassfish.jersey.servlet.ServletContainer&lt;/servlet-class&gt;</div><div class="line">        &lt;init-param&gt;</div><div class="line">            &lt;param-name&gt;jersey.config.server.provider.packages&lt;/param-name&gt;</div><div class="line">            &lt;param-value&gt;com.example&lt;/param-value&gt;</div><div class="line">        &lt;/init-param&gt;</div><div class="line">        &lt;load-on-startup&gt;1&lt;/load-on-startup&gt;</div><div class="line">    &lt;/servlet&gt;</div><div class="line">    &lt;servlet-mapping&gt;</div><div class="line">        &lt;servlet-name&gt;Jersey Web Application&lt;/servlet-name&gt;</div><div class="line">        &lt;url-pattern&gt;/webapi/*&lt;/url-pattern&gt;</div><div class="line">    &lt;/servlet-mapping&gt;</div><div class="line">&lt;/web-app&gt;</div></pre></td></tr></table></figure>
+</li>
+<li><p><code>pom.xml</code>使用的依赖包为</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div></pre></td><td class="code"><pre><div class="line">&lt;dependencyManagement&gt;</div><div class="line">    &lt;dependencies&gt;</div><div class="line">        &lt;dependency&gt;</div><div class="line">            &lt;groupId&gt;org.glassfish.jersey&lt;/groupId&gt;</div><div class="line">            &lt;artifactId&gt;jersey-bom&lt;/artifactId&gt;</div><div class="line">            &lt;version&gt;2.17&lt;/version&gt;</div><div class="line">            &lt;type&gt;pom&lt;/type&gt;</div><div class="line">            &lt;scope&gt;import&lt;/scope&gt;</div><div class="line">        &lt;/dependency&gt;</div><div class="line">    &lt;/dependencies&gt;</div><div class="line">&lt;/dependencyManagement&gt;</div><div class="line"></div><div class="line">&lt;dependencies&gt;</div><div class="line">    &lt;dependency&gt;</div><div class="line">        &lt;groupId&gt;org.glassfish.jersey.containers&lt;/groupId&gt;</div><div class="line">        &lt;artifactId&gt;jersey-container-servlet-core&lt;/artifactId&gt;</div><div class="line">    &lt;/dependency&gt;</div><div class="line">&lt;/dependencies&gt;</div></pre></td></tr></table></figure>
+</li>
+</ol>
+<p>如果使用的是servlet 3.0，则以上两个地方分别为：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div></pre></td><td class="code"><pre><div class="line">web.xml</div><div class="line">&lt;web-app version=&quot;3.0&quot;</div><div class="line">    xmlns=&quot;http://java.sun.com/xml/ns/javaee&quot;</div><div class="line">    xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot;&gt;</div><div class="line"></div><div class="line">    &lt;!-- Servlet declaration can be omitted in which case</div><div class="line">         it would be automatically added by Jersey --&gt;</div><div class="line">    &lt;servlet&gt;</div><div class="line">        &lt;servlet-name&gt;javax.ws.rs.core.Application&lt;/servlet-name&gt;</div><div class="line">    &lt;/servlet&gt;</div><div class="line"></div><div class="line">    &lt;servlet-mapping&gt;</div><div class="line">        &lt;servlet-name&gt;javax.ws.rs.core.Application&lt;/servlet-name&gt;</div><div class="line">        &lt;url-pattern&gt;/webapi/*&lt;/url-pattern&gt;</div><div class="line">    &lt;/servlet-mapping&gt;</div><div class="line">&lt;/web-app&gt;</div></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">pom.xml</div><div class="line">&lt;dependency&gt;</div><div class="line">    &lt;groupId&gt;org.glassfish.jersey.containers&lt;/groupId&gt;</div><div class="line">    &lt;artifactId&gt;jersey-container-servlet&lt;/artifactId&gt;</div><div class="line">&lt;/dependency&gt;</div></pre></td></tr></table></figure>
+<p>当然，上述<code>web.xml</code>中的入口也可以配置成Application的子类，并在该子类中声明好各种配置信息，那样在<code>web.xml</code>中就不需要再配置了，对servlet2.5，可以只保留空的web.xml；对于servlet3.0，可以不需要web.xml</p>
+<hr>
+<h2 id="添加响应GET的rest服务"><a href="#添加响应GET的rest服务" class="headerlink" title="添加响应GET的rest服务"></a>添加响应<code>GET</code>的rest服务</h2><p>增加一个类，声明<code>@Path</code>注解<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">@Path(&quot;/item&quot;)</div><div class="line">public class ItemService &#123;</div><div class="line"></div><div class="line">   ......</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>添加一个方法响应<code>GET</code>请求<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">@Path(&quot;/item&quot;)</div><div class="line">public class ItemService &#123;</div><div class="line"></div><div class="line">    @GET</div><div class="line">    @Produces(MediaType.APPLICATION_JSON)</div><div class="line">    public String get() &#123;</div><div class="line">        return &quot;item1&quot;;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>在<code>web.xml</code>中添加入口servlet的配置<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line">&lt;servlet&gt;</div><div class="line">    &lt;servlet-name&gt;Jersey Web Application&lt;/servlet-name&gt;</div><div class="line">    &lt;servlet-class&gt;org.glassfish.jersey.servlet.ServletContainer&lt;/servlet-class&gt;</div><div class="line">    &lt;init-param&gt;</div><div class="line">        &lt;param-name&gt;jersey.config.server.provider.packages&lt;/param-name&gt;</div><div class="line">        &lt;param-value&gt;com.louz.gds&lt;/param-value&gt;</div><div class="line">    &lt;/init-param&gt;</div><div class="line">    &lt;load-on-startup&gt;1&lt;/load-on-startup&gt;</div><div class="line">&lt;/servlet&gt;</div><div class="line">&lt;servlet-mapping&gt;</div><div class="line">    &lt;servlet-name&gt;Jersey Web Application&lt;/servlet-name&gt;</div><div class="line">    &lt;url-pattern&gt;/webapi/*&lt;/url-pattern&gt;</div><div class="line">&lt;/servlet-mapping&gt;</div></pre></td></tr></table></figure></p>
+<p>访问<code>http://localhost:8080/simple-service-webapp/webapi/item</code>即可看到页面显示<code>item1</code></p>
+<p>还可以在方法中声明子资源<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">@GET</div><div class="line">@Path(&quot;&#123;id&#125;&quot;)</div><div class="line">@Produces(MediaType.APPLICATION_JSON)</div><div class="line">public String getById(@PathParam(&quot;id&quot;) String id) &#123;</div><div class="line">    return id;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>访问<code>http://localhost:8080/simple-service-webapp/webapi/item/1</code>即可看到页面显示<code>1</code></p>
+<hr>
+<h2 id="如何接收POST请求"><a href="#如何接收POST请求" class="headerlink" title="如何接收POST请求"></a>如何接收POST请求</h2><p><strong>1. 使用<code>JSON-P</code></strong></p>
+<p>首先需要增加对json的支持，先在<code>pom.xml</code>增加如下的依赖<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">&lt;dependency&gt;</div><div class="line">    &lt;groupId&gt;org.glassfish.jersey.media&lt;/groupId&gt;</div><div class="line">    &lt;artifactId&gt;jersey-media-json-processing&lt;/artifactId&gt;</div><div class="line">&lt;/dependency&gt;</div></pre></td></tr></table></figure></p>
+<p>后台的service方法：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">@POST</div><div class="line">@Produces(MediaType.APPLICATION_JSON)</div><div class="line">@Consumes(MediaType.APPLICATION_JSON)</div><div class="line">public JsonObject getItem(JsonObject item) &#123;   // 使用JsonObject接收请求的json串</div><div class="line">    System.out.println(item);</div><div class="line">    return item;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p><strong>2. 使用<code>MOXy</code></strong></p>
+<p>首先需要增加对json的支持，先在<code>pom.xml</code>增加如下的依赖<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">&lt;dependency&gt;</div><div class="line">    &lt;groupId&gt;org.glassfish.jersey.media&lt;/groupId&gt;</div><div class="line">    &lt;artifactId&gt;jersey-media-moxy&lt;/artifactId&gt;</div><div class="line">&lt;/dependency&gt;</div></pre></td></tr></table></figure></p>
+<p>后台的service方法：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">@POST</div><div class="line">@Produces(MediaType.APPLICATION_JSON)</div><div class="line">@Consumes(MediaType.APPLICATION_JSON)</div><div class="line">public Item getItem(Item item) &#123;</div><div class="line">    System.out.println(item.getId());</div><div class="line">    return item;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p><strong><em>注意</em></strong>：</p>
+<p>无论是<code>JSON-P</code>还是<code>MOXy</code>，对客户端传过来的json串都有比较严格的格式要求，如果不符合的话，会报参数解析出错或者其他奇奇怪怪的错，正确的json串格式应该是：<br><code>{&quot;属性名1&quot;: 值1, &quot;属性名2&quot;: 值2}</code>，<strong>属性名两边的双引号一定要有！</strong>可以利用<code>JSON.stringify(jsonObj)</code>方法对json对象进行字符串化，以下是使用<code>jQuery</code>的前端代码样例：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">$.ajax(&#123;</div><div class="line">    url: &quot;webapi/item&quot;,</div><div class="line">    type: &quot;POST&quot;,</div><div class="line"> //   data: JSON.stringify(&#123;id: 1&#125;),   效果与下一行的一样</div><div class="line">    data: &apos;&#123;&quot;id&quot;: 1&#125;&apos;,</div><div class="line">    success: function (data) &#123;</div><div class="line">        alert(data.id);</div><div class="line">    &#125;,</div><div class="line">    contentType: &quot;application/json&quot;,</div><div class="line">    dataType: &quot;json&quot;</div><div class="line">&#125;);</div></pre></td></tr></table></figure></p>
+<hr>
+<h2 id="如何做单元测试"><a href="#如何做单元测试" class="headerlink" title="如何做单元测试"></a>如何做单元测试</h2><p>下面例子使用<code>JSON-P</code>进行描述。首先在<code>pom.xml</code>增加jersey的单元测试框架依赖：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">&lt;dependency&gt;</div><div class="line">    &lt;groupId&gt;org.glassfish.jersey.test-framework&lt;/groupId&gt;</div><div class="line">    &lt;artifactId&gt;jersey-test-framework-core&lt;/artifactId&gt;</div><div class="line">    &lt;scope&gt;test&lt;/scope&gt;</div><div class="line">&lt;/dependency&gt;</div><div class="line"></div><div class="line">&lt;dependency&gt;</div><div class="line">    &lt;groupId&gt;org.glassfish.jersey.test-framework.providers&lt;/groupId&gt;</div><div class="line">    &lt;artifactId&gt;jersey-test-framework-provider-grizzly2&lt;/artifactId&gt;</div><div class="line">    &lt;scope&gt;test&lt;/scope&gt;</div><div class="line">&lt;/dependency&gt;</div></pre></td></tr></table></figure></p>
+<p>编写测试类（继承<code>JerseyTest</code>类）即可<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div></pre></td><td class="code"><pre><div class="line">public class ItemServiceTest extends JerseyTest &#123;</div><div class="line">    @Override</div><div class="line">    protected Application configure() &#123;</div><div class="line">        final ResourceConfig config = new ResourceConfig(GridStrategyResource.class);</div><div class="line">        // 为便于调试，一般启用以下两个选项</div><div class="line">        enable(TestProperties.LOG_TRAFFIC);</div><div class="line">        enable(TestProperties.DUMP_ENTITY);</div><div class="line"></div><div class="line">        return config;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    @Test</div><div class="line">    public void testPostItem() &#123;</div><div class="line">        JsonObject doc = Json.createObjectBuilder()</div><div class="line">                .add(&quot;id&quot;, &quot;1&quot;)</div><div class="line">                .build();</div><div class="line">        final Response response = target(&quot;item&quot;).request(MediaType.APPLICATION_JSON_TYPE).post(Entity.json(doc));</div><div class="line">        System.out.println(response);</div><div class="line">        assertEquals(200, response.getStatus());</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<h2 id="与spring集成"><a href="#与spring集成" class="headerlink" title="与spring集成"></a>与spring集成</h2><p>首先在<code>pom.xml</code>引入相关依赖：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div></pre></td><td class="code"><pre><div class="line">&lt;dependencyManagement&gt;</div><div class="line">    &lt;dependencies&gt;</div><div class="line">       ...</div><div class="line">        &lt;dependency&gt;</div><div class="line">            &lt;groupId&gt;org.springframework&lt;/groupId&gt;</div><div class="line">            &lt;artifactId&gt;spring-framework-bom&lt;/artifactId&gt;</div><div class="line">            &lt;version&gt;3.2.13.RELEASE&lt;/version&gt;</div><div class="line">            &lt;type&gt;pom&lt;/type&gt;</div><div class="line">            &lt;scope&gt;import&lt;/scope&gt;</div><div class="line">        &lt;/dependency&gt;</div><div class="line"></div><div class="line">    &lt;/dependencies&gt;</div><div class="line">&lt;/dependencyManagement&gt;</div><div class="line">...</div><div class="line">&lt;dependencies&gt;</div><div class="line">    &lt;dependency&gt;</div><div class="line">        &lt;groupId&gt;org.glassfish.jersey.ext&lt;/groupId&gt;</div><div class="line">        &lt;artifactId&gt;jersey-spring3&lt;/artifactId&gt;</div><div class="line">    &lt;/dependency&gt;</div><div class="line"></div><div class="line">    &lt;dependency&gt;</div><div class="line">        &lt;groupId&gt;org.springframework&lt;/groupId&gt;</div><div class="line">        &lt;artifactId&gt;spring-core&lt;/artifactId&gt;</div><div class="line">        &lt;exclusions&gt;</div><div class="line">            &lt;exclusion&gt;</div><div class="line">                &lt;groupId&gt;commons-logging&lt;/groupId&gt;</div><div class="line">                &lt;artifactId&gt;commons-logging&lt;/artifactId&gt;</div><div class="line">            &lt;/exclusion&gt;</div><div class="line">        &lt;/exclusions&gt;</div><div class="line">    &lt;/dependency&gt;</div><div class="line"></div><div class="line">    &lt;dependency&gt;</div><div class="line">        &lt;groupId&gt;org.slf4j&lt;/groupId&gt;</div><div class="line">        &lt;artifactId&gt;jcl-over-slf4j&lt;/artifactId&gt;</div><div class="line">        &lt;version&gt;$&#123;slf4j.version&#125;&lt;/version&gt;</div><div class="line">    &lt;/dependency&gt;</div><div class="line"></div><div class="line">    &lt;dependency&gt;</div><div class="line">        &lt;groupId&gt;org.slf4j&lt;/groupId&gt;</div><div class="line">        &lt;artifactId&gt;slf4j-api&lt;/artifactId&gt;</div><div class="line">        &lt;version&gt;$&#123;slf4j.version&#125;&lt;/version&gt;</div><div class="line">    &lt;/dependency&gt;</div><div class="line"></div><div class="line">    &lt;dependency&gt;</div><div class="line">        &lt;groupId&gt;org.slf4j&lt;/groupId&gt;</div><div class="line">        &lt;artifactId&gt;slf4j-log4j12&lt;/artifactId&gt;</div><div class="line">        &lt;version&gt;$&#123;slf4j.version&#125;&lt;/version&gt;</div><div class="line">    &lt;/dependency&gt;</div><div class="line"></div><div class="line">    &lt;dependency&gt;</div><div class="line">        &lt;groupId&gt;log4j&lt;/groupId&gt;</div><div class="line">        &lt;artifactId&gt;log4j&lt;/artifactId&gt;</div><div class="line">        &lt;version&gt;1.2.17&lt;/version&gt;</div><div class="line">    &lt;/dependency&gt;</div><div class="line"></div><div class="line">    &lt;dependency&gt;</div><div class="line">        &lt;groupId&gt;org.springframework&lt;/groupId&gt;</div><div class="line">        &lt;artifactId&gt;spring-web&lt;/artifactId&gt;</div><div class="line">    &lt;/dependency&gt;</div><div class="line">&lt;/dependencies&gt;</div></pre></td></tr></table></figure></p>
+<p>在<code>web.xml</code>声明spring的配置文件位置<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">&lt;listener&gt;</div><div class="line">        &lt;listener-class&gt;org.springframework.web.context.ContextLoaderListener&lt;/listener-class&gt;</div><div class="line">    &lt;/listener&gt;</div><div class="line"></div><div class="line">    &lt;context-param&gt;</div><div class="line">        &lt;param-name&gt;contextConfigLocation&lt;/param-name&gt;</div><div class="line">        &lt;param-value&gt;classpath:applicationContext.xml&lt;/param-value&gt;</div><div class="line">    &lt;/context-param&gt;</div></pre></td></tr></table></figure></p>
+<p>增加spring的配置文件：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;</div><div class="line">&lt;beans xmlns=&quot;http://www.springframework.org/schema/beans&quot;</div><div class="line">       xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot;</div><div class="line">       xmlns:context=&quot;http://www.springframework.org/schema/context&quot;</div><div class="line">       xsi:schemaLocation=&quot;</div><div class="line">       http://www.springframework.org/schema/beans</div><div class="line">       http://www.springframework.org/schema/beans/spring-beans.xsd</div><div class="line">       http://www.springframework.org/schema/context</div><div class="line">       http://www.springframework.org/schema/context/spring-context.xsd&quot;&gt;</div><div class="line"></div><div class="line">    &lt;context:component-scan base-package=&quot;com.louz.gds&quot;/&gt;</div><div class="line">&lt;/beans&gt;</div></pre></td></tr></table></figure></p>
+<p>Spring的bean可以在上面的配置文件中声明，也可以通过<code>@Component/@Repository/@Service/@Controller</code>的方式声明。</p>
+<p>Jersey的资源类注入Spring的bean可以通过以下方式：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line">@Path(&quot;/item&quot;)</div><div class="line">public class ItemService &#123;</div><div class="line"></div><div class="line">//  @Resource(name = &quot;itemDao&quot;)   如果该类没有声明成@Component,@Resource无法生效</div><div class="line">    @Autowired</div><div class="line">    @Qualifier(&quot;itemDao&quot;)    // @Autowired默认按类注入，使用@Qualifier可以按bean名称注入</div><div class="line">//    @Inject</div><div class="line">//    @Named(&quot;itemDao&quot;)      // 与使用@Autowired+@Qualifier等效</div><div class="line">    private ItemDao myItemDao;</div><div class="line"></div><div class="line">    ...</div><div class="line">&#125;</div><div class="line"></div><div class="line">@Repository(value = &quot;itemDao&quot;)</div><div class="line">public class ItemDao &#123;</div><div class="line">    public void saveItem(JsonObject item) &#123;</div><div class="line">        System.out.println(&quot;save in dao&quot;);</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>注意，当Jersey与spring集成测试时，Jersey容器默认加载<code>classpath:applicationContext.xml</code>文件作为spring的配置文件，如果要加载指定文件，需要做以下处理：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">public class ResourceTest extends JerseyTest &#123;</div><div class="line">    @Override</div><div class="line">    protected Application configure() &#123;</div><div class="line"></div><div class="line">        final ResourceConfig config = new ResourceConfig(Resource.class);</div><div class="line">        config.property(&quot;contextConfigLocation&quot;, &quot;classpath:my.spring.xml&quot;);  // 该参数名和值与web.xml里配置的一致</div><div class="line">        return config;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    ......</div></pre></td></tr></table></figure></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://louz.github.io/2015/02/16/jersey-stepbystep/" data-id="cixn1gs0d001xj8zoxjguqh32" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Restful/">Restful</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/jersey/">jersey</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-centos-howto" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2014/11/26/centos-howto/" class="article-date">
+  <time datetime="2014-11-26T07:33:53.000Z" itemprop="datePublished">2014-11-26</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Linux/">Linux</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2014/11/26/centos-howto/">centos-howto</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="yum使用本地光盘作为源"><a href="#yum使用本地光盘作为源" class="headerlink" title="yum使用本地光盘作为源"></a>yum使用本地光盘作为源</h2><p><strong>挂载CentOS光盘</strong><br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">mkdir /mnt/cdrom</div><div class="line">mount -t iso9660 /dev/cdrom /mnt/cdrom</div></pre></td></tr></table></figure></p>
+<p><strong>移除网络源</strong><br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">cd /etc/yum.repos.d/</div><div class="line">mv CentOS-Base.repo CentOS-Base.repo.bak</div><div class="line">mv CentOS-Debuginfo.repo CentOS-Debuginfo.repo.bak</div></pre></td></tr></table></figure></p>
+<p><strong>增加本地源配置</strong><br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">cp CentOS-Media.repo My.repo</div><div class="line">vi My.repo</div></pre></td></tr></table></figure></p>
+<p>以下是My.repo的内容<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">[c6]</div><div class="line">name=CentOS-$releasever - Media</div><div class="line">baseurl=file:///mnt/cdrom/</div><div class="line">gpgcheck=1        #0表示不作校验, 1表示要校验</div><div class="line">enabled=1         #0表示不启用该REPO, 1表示启用</div><div class="line">gpgkey=file:///mnt/cdrom/RPM-GPG-KEY-CentOS-6    #gpgcheck=1时需要该配置</div></pre></td></tr></table></figure></p>
+<p><strong>验证</strong><br>执行<code>yum list</code><br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">[root@localhost cdrom]# yum list | more</div><div class="line">Loaded plugins: fastestmirror, security</div><div class="line">Loading mirror speeds from cached hostfile</div><div class="line">Installed Packages</div><div class="line">ConsoleKit.i686                          0.4.1-3.el6                          @anaconda-CentOS-201311271240.i386/6.5</div><div class="line">ConsoleKit-libs.i686                     0.4.1-3.el6                          @anaconda-CentOS-201311271240.i386/6.5</div><div class="line">MAKEDEV.i686                             3.24-6.el6                           @anaconda-CentOS-201311271240.i386/6.5</div><div class="line">SDL.i686                                 1.2.14-3.el6                         @anaconda-CentOS-201311271240.i386/6.5</div><div class="line">abrt.i686                                2.0.8-21.el6.centos                  @anaconda-CentOS-201311271240.i386/6.5</div><div class="line">abrt-addon-ccpp.i686                     2.0.8-21.el6.centos                  @anaconda-CentOS-201311271240.i386/6.5</div><div class="line">......</div></pre></td></tr></table></figure></p>
+<p>出现以上信息即表示repo正常添加</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://louz.github.io/2014/11/26/centos-howto/" data-id="cixn1gry40005j8zop96dypcj" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CentOS/">CentOS</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Linux/">Linux</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-http-faq" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2014/11/26/http-faq/" class="article-date">
+  <time datetime="2014-11-26T01:02:52.000Z" itemprop="datePublished">2014-11-26</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/开发/">开发</a>►<a class="article-category-link" href="/categories/开发/http/">http</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2014/11/26/http-faq/">HTTP FAQ</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h3 id="如何请求部分内容"><a href="#如何请求部分内容" class="headerlink" title="如何请求部分内容"></a>如何请求部分内容</h3><p>在请求头中利用<code>Range</code>参数<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">GET /aa.jpg HTTP/1.1</div><div class="line">Host: www.example.com</div><div class="line">Range: bytes =1001-2000</div></pre></td></tr></table></figure></p>
+<p>响应报文类似如下：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">HTTP/1.1 206 Partial Content</div><div class="line">Date: xxx</div><div class="line">Content-Range: bytes 1001-2000/2000</div><div class="line">Content-Length: 1000</div><div class="line">Content-Type: image/jpeg</div></pre></td></tr></table></figure></p>
+<h3 id="跨域获取数据"><a href="#跨域获取数据" class="headerlink" title="跨域获取数据"></a>跨域获取数据</h3><p>ajax跨域取数据时，注意2点：</p>
+<ol>
+<li>http状态可以获取到</li>
+<li>结果获取不到</li>
+</ol>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://louz.github.io/2014/11/26/http-faq/" data-id="cixn1gs04001kj8zoq5d9rcgm" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/http/">http</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-sqoop-howto" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2014/08/20/sqoop-howto/" class="article-date">
+  <time datetime="2014-08-20T06:30:40.000Z" itemprop="datePublished">2014-08-20</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Sqoop/">Sqoop</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2014/08/20/sqoop-howto/">sqoop-howto</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>Sqoop主要用于在Hadoop与传统关系型数据库之间进行数据传递</p>
+<p>##帮助命令<br><code>$SQOOP_HOME/bin/sqoop help &lt;command&gt;</code></p>
+<p>##从Mysql导入数据到HDFS</p>
+<p>首先先把mysql的jdbc驱动copy到<code>$SQOOP_HOME/lib</code>目录<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line">[hduser@hadoop2 lib]$ pwd</div><div class="line">/usr/local/share/applications/sqoop-1.4.5.bin__hadoop-2.0.4-alpha/lib</div><div class="line">[hduser@hadoop2 lib]$ l</div><div class="line">total 5144</div><div class="line">-rw-rw-r--. 1 root root  224277 Aug  2  2014 ant-contrib-1.0b3.jar</div><div class="line">-rw-rw-r--. 1 root root   36455 Aug  2  2014 ant-eclipse-1.0-jvm1.2.jar</div><div class="line">-rw-rw-r--. 1 root root  400680 Aug  2  2014 avro-1.7.5.jar</div><div class="line">-rw-rw-r--. 1 root root  170570 Aug  2  2014 avro-mapred-1.7.5-hadoop2.jar</div><div class="line">-rw-rw-r--. 1 root root  241367 Aug  2  2014 commons-compress-1.4.1.jar</div><div class="line">-rw-rw-r--. 1 root root  109043 Aug  2  2014 commons-io-1.4.jar</div><div class="line">-rw-rw-r--. 1 root root  706710 Aug  2  2014 hsqldb-1.8.0.10.jar</div><div class="line">-rw-rw-r--. 1 root root  232248 Aug  2  2014 jackson-core-asl-1.9.13.jar</div><div class="line">-rw-rw-r--. 1 root root  780664 Aug  2  2014 jackson-mapper-asl-1.9.13.jar</div><div class="line">-rw-r--r--. 1 root root  969020 Jul  8 18:06 mysql-connector-java-5.1.32-bin.jar</div><div class="line">-rw-rw-r--. 1 root root   29555 Aug  2  2014 paranamer-2.3.jar</div><div class="line">-rw-rw-r--. 1 root root 1251514 Aug  2  2014 snappy-java-1.0.5.jar</div><div class="line">-rw-rw-r--. 1 root root   94672 Aug  2  2014 xz-1.0.jar</div></pre></td></tr></table></figure></p>
+<p>执行命令查看当前Mysql有哪些数据库<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">bin/sqoop list-databases --connect jdbc:mysql://localhost/test --username mysql</div></pre></td></tr></table></figure></p>
+<p> 会看到类似的输出，最后两行就是当前Mysql中的数据库列表<br> <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div></pre></td><td class="code"><pre><div class="line"> [hduser@hadoop2 sqoop-1.4.5.bin__hadoop-2.0.4-alpha]$  bin/sqoop list-databases --connect jdbc:mysql://localhost/test --username mysql </div><div class="line">Warning: /usr/local/share/applications/sqoop-1.4.5.bin__hadoop-2.0.4-alpha/../hcatalog does not exist! HCatalog jobs will fail.</div><div class="line">Please set $HCAT_HOME to the root of your HCatalog installation.</div><div class="line">Warning: /usr/local/share/applications/sqoop-1.4.5.bin__hadoop-2.0.4-alpha/../accumulo does not exist! Accumulo imports will fail.</div><div class="line">Please set $ACCUMULO_HOME to the root of your Accumulo installation.</div><div class="line">Warning: /usr/local/share/applications/sqoop-1.4.5.bin__hadoop-2.0.4-alpha/../zookeeper does not exist! Accumulo imports will fail.</div><div class="line">Please set $ZOOKEEPER_HOME to the root of your Zookeeper installation.</div><div class="line">14/07/08 18:23:15 INFO sqoop.Sqoop: Running Sqoop version: 1.4.5</div><div class="line">14/07/08 18:23:15 INFO manager.MySQLManager: Preparing to use a MySQL streaming resultset.</div><div class="line">SLF4J: Class path contains multiple SLF4J bindings.</div><div class="line">SLF4J: Found binding in [jar:file:/usr/local/share/applications/hadoop-2.2.0/share/hadoop/common/lib/slf4j-log4j12-1.7.5.jar!/org/slf4j/impl/StaticLoggerBinder.class]</div><div class="line">SLF4J: Found binding in [jar:file:/usr/local/share/applications/hbase-0.98.2-hadoop2/lib/slf4j-log4j12-1.6.4.jar!/org/slf4j/impl/StaticLoggerBinder.class]</div><div class="line">SLF4J: See http://www.slf4j.org/codes.html#multiple_bindings for an explanation.</div><div class="line">SLF4J: Actual binding is of type [org.slf4j.impl.Log4jLoggerFactory]</div><div class="line">information_schema</div><div class="line">test</div></pre></td></tr></table></figure></p>
+<p>执行如下命令可以将<code>users</code>表的数据导入到HDFS的<code>/sqoop/import/users</code>目录<br><em>注意：若users表没有主键，则必须指定<code>--split-by</code>参数或<code>-m 1</code>参数</em><br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">bin/sqoop import --connect jdbc:mysql://localhost/test --username mysql --table users --split-by id</div></pre></td></tr></table></figure></p>
+<p>##从Mysql导入数据到HBase</p>
+<p>##从HDFS导出数据到Mysql</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://louz.github.io/2014/08/20/sqoop-howto/" data-id="cixn1gs18002uj8zo4gwn0cpy" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Sqoop/">Sqoop</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/大数据/">大数据</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-java-regex" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2014/08/08/java-regex/" class="article-date">
+  <time datetime="2014-08-08T08:33:01.000Z" itemprop="datePublished">2014-08-08</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/开发/">开发</a>►<a class="article-category-link" href="/categories/开发/Java/">Java</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2014/08/08/java-regex/">java-regex</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="Matcher的Group使用"><a href="#Matcher的Group使用" class="headerlink" title="Matcher的Group使用"></a>Matcher的Group使用</h2><p>正则表达式中，<code>()</code>表示一个分组，使用分组可以将一段文本按正则表达式解析成多段（多个分组），以下是演示代码：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">import</span> java.util.regex.Matcher;</div><div class="line"><span class="keyword">import</span> java.util.regex.Pattern;</div><div class="line"></div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">RegexMatchGroup</span> </span>&#123;</div><div class="line"></div><div class="line">    <span class="comment">/**</span></div><div class="line">     * <span class="doctag">@param</span> args</div><div class="line">     */</div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</div><div class="line">        Pattern p = Pattern.compile(<span class="string">"(.*),(.*),(.*),(.*)"</span>);                 <span class="comment">// 4组文本按,进行分割</span></div><div class="line">        Matcher m = p.matcher(<span class="string">"user1,tom,m,23"</span>);</div><div class="line">        System.out.println(<span class="string">"matcher groupCount = "</span> + m.groupCount());</div><div class="line">        <span class="keyword">if</span> (m.matches()) &#123;                                                  <span class="comment">// 必须先执行该方法，才能真正将文本分组分割</span></div><div class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; m.groupCount(); i++) &#123;</div><div class="line">                System.out.println(<span class="string">"group["</span> + (i+<span class="number">1</span>) + <span class="string">"] = "</span> + m.group(i + <span class="number">1</span>)); <span class="comment">// Matcher的group从1开始记数</span></div><div class="line">            &#125;</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>运行结果：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">matcher groupCount = 4</div><div class="line">group[1] = user1</div><div class="line">group[2] = tom</div><div class="line">group[3] = m</div><div class="line">group[4] = 23</div></pre></td></tr></table></figure></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://louz.github.io/2014/08/08/java-regex/" data-id="cixn1grzy001hj8zog6j5n6dq" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/正则表达式/">正则表达式</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-flume-howto" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2014/08/05/flume-howto/" class="article-date">
+  <time datetime="2014-08-05T08:23:47.000Z" itemprop="datePublished">2014-08-05</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Flume/">Flume</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2014/08/05/flume-howto/">flume-howto</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>  Flume是一个高可用的，分布式的海量日志采集、聚合和传输系统，Flume支持在日志系统中定制各类数据发送方，用于收集数据；同时，Flume提供对数据进行简单处理，并写到各种数据接受方（可定制）的能力</p>
+<p>  Flume的基本结构：agent = source（源）+ channel（类似缓存） + sink（目的）<br>  <img src="/img/flume基础结构.PNG" alt="Flume的基本结构"></p>
+<p>  每个agent由source、channel、sink组成，agent可以任意组合</p>
+<p>Flume支持的源：Avro、Thrift、Exec、JMS、目录、NetCat、Syslog、Http、自定义source</p>
+<p>Flume支持的sink：HDFS、控制台输出、Avro、Thrift、IRC、本地文件、HBase、Apache Solr、自定义输出</p>
+<p>Flume支持的channel类型：内存、数据库(目前仅支持Derby)、本地文件、自定义channel</p>
+<p>##1. 一个简单例子<br>在<code>conf</code>目录新建<a href="/attachment/flume-louz.conf">flume-louz.conf</a>文件，内容如下：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div></pre></td><td class="code"><pre><div class="line">agent.sources = r1 </div><div class="line">agent.channels = c1 </div><div class="line">agent.sinks = k1 </div><div class="line"></div><div class="line"># For each one of the sources, the type is defined</div><div class="line">agent.sources.r1.type = netcat </div><div class="line">agent.sources.r1.bind = localhost</div><div class="line">agent.sources.r1.port = 44444</div><div class="line"></div><div class="line"># The channel can be defined as follows.</div><div class="line">agent.sources.r1.channels = c1 </div><div class="line"></div><div class="line"># Each sink&apos;s type must be defined</div><div class="line">agent.sinks.k1.type = logger</div><div class="line"></div><div class="line">#Specify the channel the sink should use</div><div class="line">agent.sinks.k1.channel = c1 </div><div class="line"></div><div class="line"># Each channel&apos;s type is defined.</div><div class="line">agent.channels.c1.type = memory</div><div class="line"></div><div class="line"># Other config values specific to each type of channel(sink or source)</div><div class="line"># can be defined as well</div><div class="line"># In this case, it specifies the capacity of the memory channel</div><div class="line">agent.channels.c1.capacity = 1000</div><div class="line">agent.channels.c1.transactionCapacity = 100</div></pre></td></tr></table></figure></p>
+<p>配置完后，运行<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">bin/flume-ng agent --conf conf -f conf/flume-louz.conf -n agent -Dflume.root.logger=INFO,console</div></pre></td></tr></table></figure></p>
+<p>然后打开另一个控制台，输入命令<code>telnet localhost 44444</code>，得到如下输出<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">[hduser@hadoop2 conf]$ telnet localhost 44444</div><div class="line">Trying ::1...</div><div class="line">telnet: connect to address ::1: Connection refused</div><div class="line">Trying 127.0.0.1...</div><div class="line">Connected to localhost.</div><div class="line">Escape character is &apos;^]&apos;.</div><div class="line">hello </div><div class="line">OK</div></pre></td></tr></table></figure></p>
+<p>输入任意字符串，在之前的窗口都可以看到该字符串的回显<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">2014-06-30 17:43:58,943 (SinkRunner-PollingRunner-DefaultSinkProcessor) [INFO - org.apache.flume.sink.LoggerSink.process(LoggerSink.java:70)] Event: &#123; headers:&#123;&#125; body: 68 65 6C 6C 6F 20 0D                            hello . &#125;</div></pre></td></tr></table></figure></p>
+<p>##2. 用exec命令<br><code>cp flume-louz.conf flume-exec.conf</code>，然后将<a href="/attachment/flume-exec.conf">flume-exec.conf</a>中关于source定义的一段修改为：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"># For each one of the sources, the type is defined</div><div class="line">agent.sources.r1.type = exec</div><div class="line">agent.sources.r1.command = tail -F /home/hduser/flume.log</div></pre></td></tr></table></figure></p>
+<p>运行<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">bin/flume-ng agent --conf conf -f conf/flume-exec.conf -n agent -Dflume.root.logger=INFO,console</div></pre></td></tr></table></figure></p>
+<p>然后新开一个命令行窗口，新建<code>/home/hduser/flume.log</code>文件，增加一行<code>line1</code>，保存，在<code>flume-ng</code>的运行窗口可以看到<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">2014-07-02 11:07:37,516 (SinkRunner-PollingRunner-DefaultSinkProcessor) [INFO - org.apache.flume.sink.LoggerSink.process(LoggerSink.java:70)] Event: &#123; headers:&#123;&#125; body: 6C 69 6E 65 31                                  line1 &#125;</div></pre></td></tr></table></figure></p>
+<p>##3. 结果写入HDFS<br><code>cp flume-exec.conf flume-hdfs.conf</code>，然后将<a href="/attachment/flume-hdfs.conf">flume-hdfs.conf</a>中关于sink定义的一段修改为：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">agent.sinks.k1.type = hdfs</div><div class="line">agent.sinks.k1.hdfs.path = hdfs://hadoop2:9000/flume/%y-%m-%d/%H%M</div><div class="line">agent.sinks.k1.hdfs.round = true</div><div class="line">agent.sinks.k1.hdfs.roundValue = 1                #每分钟生成一个文件</div><div class="line">agent.sinks.k1.hdfs.roundUnit = minute</div><div class="line">agent.sinks.k1.hdfs.useLocalTimeStamp = true      #按时间频率生成文件的需要指定该属性，或者在source中有时间属性</div><div class="line">agent.sinks.k1.hdfs.fileType = DataStream         #默认为SequenceFile，指定为DataStream的话就是文本文件</div></pre></td></tr></table></figure></p>
+<p>运行<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">bin/flume-ng agent --conf conf -f conf/flume-hdfs.conf -n agent -Dflume.root.logger=INFO,console</div></pre></td></tr></table></figure></p>
+<p>然后新开一个命令行窗口，编辑<code>/home/hduser/flume.log</code>文件，增加文本，运行<code>hdfs dfs -ls -R /flume</code>可以看到类似的结果<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">[hduser@hadoop2 ~]$ hdfs dfs -ls -R /flume</div><div class="line">drwxrwxrwx   - hduser supergroup          0 2014-07-02 12:15 /flume/14-07-02</div><div class="line">drwxrwxrwx   - hduser supergroup          0 2014-07-02 12:08 /flume/14-07-02/1208</div><div class="line">-rw-r--r--   1 hduser supergroup        145 2014-07-02 12:08 /flume/14-07-02/1208/FlumeData.1404274103113</div><div class="line">drwxrwxrwx   - hduser supergroup          0 2014-07-02 12:10 /flume/14-07-02/1209</div><div class="line">-rw-r--r--   1 hduser supergroup        170 2014-07-02 12:10 /flume/14-07-02/1209/FlumeData.1404274186830</div><div class="line">drwxrwxrwx   - hduser supergroup          0 2014-07-02 12:10 /flume/14-07-02/1210</div><div class="line">-rw-r--r--   1 hduser supergroup        215 2014-07-02 12:10 /flume/14-07-02/1210/FlumeData.1404274204220</div><div class="line">drwxrwxrwx   - hduser supergroup          0 2014-07-02 12:15 /flume/14-07-02/1214</div><div class="line">-rw-r--r--   1 hduser supergroup         55 2014-07-02 12:15 /flume/14-07-02/1214/FlumeData.1404274468895</div><div class="line">drwxrwxrwx   - hduser supergroup          0 2014-07-02 12:15 /flume/14-07-02/1215</div><div class="line">-rw-r--r--   1 hduser supergroup          0 2014-07-02 12:15 /flume/14-07-02/1215/FlumeData.1404274501412.tmp</div></pre></td></tr></table></figure></p>
+<p>其中*.tmp的文件是当前正在写的文件，该例子中，当这分钟过去后，该后缀会去掉</p>
+<p>##4. 写入HBase<br>首先新建一个测试用的表:<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">hbase(main):005:0&gt; create &apos;flumeTest&apos;, &apos;cf&apos;</div></pre></td></tr></table></figure></p>
+<p>再增加测试数据的文本文件，样例数据如下：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">user1,tom,m,23</div><div class="line">user2,jack,m,24</div><div class="line">user3,kate,f,30</div></pre></td></tr></table></figure></p>
+<p>以下是flume的配置文件<a href="/attachment/flume-hbase.conf">flume-hbase.conf</a><br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div></pre></td><td class="code"><pre><div class="line">agent.sources = r1</div><div class="line">agent.channels = c1</div><div class="line">agent.sinks = k1</div><div class="line"></div><div class="line"># For each one of the sources, the type is defined</div><div class="line">agent.sources.r1.type = exec</div><div class="line">agent.sources.r1.command = cat /home/hduser/flume_to_hbase.dat</div><div class="line"></div><div class="line"># The channel can be defined as follows.</div><div class="line">agent.sources.r1.channels = c1</div><div class="line"></div><div class="line"># Each sink&apos;s type must be defined</div><div class="line">agent.sinks.k1.type = hbase</div><div class="line">agent.sinks.k1.table = flumeTest</div><div class="line">agent.sinks.k1.columnFamily = cf</div><div class="line">agent.sinks.k1.serializer = org.apache.flume.sink.hbase.RegexHbaseEventSerializer</div><div class="line">agent.sinks.k1.serializer.colNames = ROW_KEY,name,gender,age  #如果有字段会作为rowkey插入表中，则该字段名必须命名为ROW_KEY</div><div class="line">agent.sinks.k1.serializer.regex = (.*),(.*),(.*),(.*)  # 分组的正则表达式</div><div class="line">agent.sinks.k1.serializer.rowKeyIndex = 0   #有字段作为rowkey时，需要指定所在位置</div><div class="line"></div><div class="line">#Specify the channel the sink should use</div><div class="line">agent.sinks.k1.channel = c1</div><div class="line"></div><div class="line"># Each channel&apos;s type is defined.</div><div class="line">agent.channels.c1.type = memory</div><div class="line"></div><div class="line"># Other config values specific to each type of channel(sink or source)</div><div class="line"># can be defined as well</div><div class="line"># In this case, it specifies the capacity of the memory channel</div><div class="line">agent.channels.c1.capacity = 1000</div><div class="line">agent.channels.c1.transactionCapacity = 100</div></pre></td></tr></table></figure></p>
+<p>运行该flume-ng后，查看hbase中的表，可以看到数据已经插入到表中:<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">hbase(main):009:0&gt; scan &apos;flumeTest&apos;</div><div class="line">ROW                   COLUMN+CELL                                               </div><div class="line"> user1                column=cf:age, timestamp=1404362846923, value=23          </div><div class="line"> user1                column=cf:gender, timestamp=1404362846923, value=m        </div><div class="line"> user1                column=cf:name, timestamp=1404362846923, value=tom        </div><div class="line"> user2                column=cf:age, timestamp=1404362846923, value=24          </div><div class="line"> user2                column=cf:gender, timestamp=1404362846923, value=m        </div><div class="line"> user2                column=cf:name, timestamp=1404362846923, value=jack       </div><div class="line"> user3                column=cf:age, timestamp=1404362846923, value=30          </div><div class="line"> user3                column=cf:gender, timestamp=1404362846923, value=f        </div><div class="line"> user3                column=cf:name, timestamp=1404362846923, value=kate       </div><div class="line">3 row(s) in 2.0860 seconds</div></pre></td></tr></table></figure></p>
+<p>##5. 写分发<br>flume的写分发是通过多个channel进行的，如下图：<br><img src="/img/UserGuide_image01.png" alt="写分发示意图">，因此可以按以下方式进行配置。<code>cp flume-exec.conf flume-writeDispatch.conf</code>，修改<a href="/attachment/flume-writeDispatch.conf">flume-writeDispatch.conf</a>为：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div></pre></td><td class="code"><pre><div class="line">agent.sources = r1</div><div class="line">agent.channels = c1 c2                       # 2个channel</div><div class="line">agent.sinks = k1 k2                          # 2个sinks</div><div class="line"></div><div class="line"># For each one of the sources, the type is defined</div><div class="line">agent.sources.r1.type = exec</div><div class="line">agent.sources.r1.command = tail -F /home/hduser/flume.log</div><div class="line"></div><div class="line"># The channel can be defined as follows.</div><div class="line">agent.sources.r1.channels = c1 c2</div><div class="line"></div><div class="line"># Each sink&apos;s type must be defined</div><div class="line">agent.sinks.k1.type = logger</div><div class="line"></div><div class="line">agent.sinks.k2.type = hdfs</div><div class="line">agent.sinks.k2.hdfs.path = hdfs://hadoop2:9000/flume/writeDispatch.txt</div><div class="line">agent.sinks.k2.hdfs.fileType = DataStream</div><div class="line">agent.sinks.k2.hdfs.rollInterval = 0            # 设置成不滚动</div><div class="line">agent.sinks.k2.hdfs.rollSize = 0</div><div class="line">agent.sinks.k2.hdfs.rollCount = 0</div><div class="line"></div><div class="line">#Specify the channel the sink should use</div><div class="line">agent.sinks.k1.channel = c1</div><div class="line">agent.sinks.k2.channel = c2</div><div class="line"></div><div class="line"># Each channel&apos;s type is defined.</div><div class="line">agent.channels.c1.type = memory</div><div class="line">agent.channels.c1.capacity = 1000</div><div class="line">agent.channels.c1.transactionCapacity = 100</div><div class="line"></div><div class="line">agent.channels.c2.type = memory</div><div class="line">agent.channels.c2.capacity = 1000</div><div class="line">agent.channels.c2.transactionCapacity = 100</div></pre></td></tr></table></figure></p>
+<p>运行flume-ng，编辑<code>/home/hduser/flume.log</code>文件，可以看到命令行窗口和hdfs里都有信息输出</p>
+<p>##6. 读汇总<br>flume的读汇总是通过多个agent的sink指向同一个agent的source实现，架构如下图<br><img src="/img/UserGuide_image02.png" alt="读汇总">，样例配置如下：</p>
+<p><a href="/attachment/flume-collector.conf">flume-collector.conf</a>  收集器agent配置<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div></pre></td><td class="code"><pre><div class="line">agent.sources = r1</div><div class="line">agent.channels = c1</div><div class="line">agent.sinks = k1</div><div class="line"></div><div class="line"># For each one of the sources, the type is defined</div><div class="line">agent.sources.r1.type = avro</div><div class="line">agent.sources.r1.bind = localhost                    # 监听60000端口</div><div class="line">agent.sources.r1.port = 60000</div><div class="line"></div><div class="line"># The channel can be defined as follows.</div><div class="line">agent.sources.r1.channels = c1</div><div class="line"></div><div class="line"># Each sink&apos;s type must be defined</div><div class="line">agent.sinks.k1.type = logger</div><div class="line"></div><div class="line">#Specify the channel the sink should use</div><div class="line">agent.sinks.k1.channel = c1</div><div class="line"></div><div class="line"># Each channel&apos;s type is defined.</div><div class="line">agent.channels.c1.type = memory</div><div class="line"></div><div class="line"># Other config values specific to each type of channel(sink or source)</div><div class="line"># can be defined as well</div><div class="line"># In this case, it specifies the capacity of the memory channel</div><div class="line">agent.channels.c1.capacity = 1000</div><div class="line">agent.channels.c1.transactionCapacity = 100</div></pre></td></tr></table></figure></p>
+<p><a href="/attachment/flume-src1.conf">flume-src1.conf</a><br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div></pre></td><td class="code"><pre><div class="line">agent1.sources = r1</div><div class="line">agent1.channels = c1</div><div class="line">agent1.sinks = k1</div><div class="line"></div><div class="line"># For each one of the sources, the type is defined</div><div class="line">agent1.sources.r1.type = netcat</div><div class="line">agent1.sources.r1.bind = localhost</div><div class="line">agent1.sources.r1.port = 44444</div><div class="line"></div><div class="line"># The channel can be defined as follows.</div><div class="line">agent1.sources.r1.channels = c1</div><div class="line"></div><div class="line"># Each sink&apos;s type must be defined</div><div class="line">agent1.sinks.k1.type = avro</div><div class="line">agent1.sinks.k1.hostname = localhost                 #sink指向收集agent的端口</div><div class="line">agent1.sinks.k1.port = 60000</div><div class="line"></div><div class="line">#Specify the channel the sink should use</div><div class="line">agent1.sinks.k1.channel = c1</div><div class="line"></div><div class="line"># Each channel&apos;s type is defined.</div><div class="line">agent1.channels.c1.type = memory</div><div class="line"></div><div class="line"># Other config values specific to each type of channel(sink or source)</div><div class="line"># can be defined as well</div><div class="line"># In this case, it specifies the capacity of the memory channel</div><div class="line">agent1.channels.c1.capacity = 1000</div><div class="line">agent1.channels.c1.transactionCapacity = 100</div></pre></td></tr></table></figure></p>
+<p><a href="/attachment/flume-src2.conf">flume-src2.conf</a><br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div></pre></td><td class="code"><pre><div class="line">agent2.sources = r1</div><div class="line">agent2.channels = c1</div><div class="line">agent2.sinks = k1</div><div class="line"></div><div class="line"># For each one of the sources, the type is defined</div><div class="line">agent2.sources.r1.type = netcat</div><div class="line">agent2.sources.r1.bind = localhost</div><div class="line">agent2.sources.r1.port = 55555</div><div class="line"></div><div class="line"># The channel can be defined as follows.</div><div class="line">agent2.sources.r1.channels = c1</div><div class="line"></div><div class="line"># Each sink&apos;s type must be defined</div><div class="line">agent2.sinks.k1.type = avro</div><div class="line">agent2.sinks.k1.hostname = localhost               #sink指向收集agent的端口</div><div class="line">agent2.sinks.k1.port = 60000</div><div class="line"></div><div class="line">#Specify the channel the sink should use</div><div class="line">agent2.sinks.k1.channel = c1</div><div class="line"></div><div class="line"># Each channel&apos;s type is defined.</div><div class="line">agent2.channels.c1.type = memory</div><div class="line"></div><div class="line"># Other config values specific to each type of channel(sink or source)</div><div class="line"># can be defined as well</div><div class="line"># In this case, it specifies the capacity of the memory channel</div><div class="line">agent2.channels.c1.capacity = 1000</div><div class="line">agent2.channels.c1.transactionCapacity = 100</div></pre></td></tr></table></figure></p>
+<p>打开3个窗口，分别使用上述的配置文件运行flume-ng，再新开两个窗口，分别telnet localhost的44444和55555端口，输入字符串，可以在运行flume-collector.conf的窗口看到类似的输出<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">2014-07-03 07:23:44,858 (New I/O server boss #1 ([id: 0x15811815, /127.0.0.1:60000])) [INFO - org.apache.avro.ipc.NettyServer$NettyServerAvroHandler.handleUpstream(NettyServer.java:171)] [id: 0x178eeb69, /127.0.0.1:49206 =&gt; /127.0.0.1:60000] OPEN</div><div class="line">2014-07-03 07:23:44,859 (New I/O  worker #2) [INFO - org.apache.avro.ipc.NettyServer$NettyServerAvroHandler.handleUpstream(NettyServer.java:171)] [id: 0x178eeb69, /127.0.0.1:49206 =&gt; /127.0.0.1:60000] BOUND: /127.0.0.1:60000</div><div class="line">2014-07-03 07:23:44,859 (New I/O  worker #2) [INFO - org.apache.avro.ipc.NettyServer$NettyServerAvroHandler.handleUpstream(NettyServer.java:171)] [id: 0x178eeb69, /127.0.0.1:49206 =&gt; /127.0.0.1:60000] CONNECTED: /127.0.0.1:49206</div><div class="line">2014-07-03 07:24:34,216 (SinkRunner-PollingRunner-DefaultSinkProcessor) [INFO - org.apache.flume.sink.LoggerSink.process(LoggerSink.java:70)] Event: &#123; headers:&#123;&#125; body: 68 65 6C 6C 6F 2C 20 69 20 61 6D 20 75 73 65 72 hello, i am user &#125;</div><div class="line">2014-07-03 07:26:00,241 (SinkRunner-PollingRunner-DefaultSinkProcessor) [INFO - org.apache.flume.sink.LoggerSink.process(LoggerSink.java:70)] Event: &#123; headers:&#123;&#125; body: 69 20 61 6D 20 75 73 65 72 31 20 6C 69 6E 65 31 i am user1 line1 &#125;</div><div class="line">2014-07-03 07:26:54,258 (SinkRunner-PollingRunner-DefaultSinkProcessor) [INFO - org.apache.flume.sink.LoggerSink.process(LoggerSink.java:70)] Event: &#123; headers:&#123;&#125; body: 68 69 2C 20 69 20 61 6D 20 75 73 65 72 32 0D    hi, i am user2. &#125;</div><div class="line">2014-07-03 07:27:24,271 (SinkRunner-PollingRunner-DefaultSinkProcessor) [INFO - org.apache.flume.sink.LoggerSink.process(LoggerSink.java:70)] Event: &#123; headers:&#123;&#125; body: 62 79 65 20 75 73 65 72 32 0D                   bye user2. &#125;</div></pre></td></tr></table></figure></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://louz.github.io/2014/08/05/flume-howto/" data-id="cixn1grzc0010j8zowg07w9je" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Flume/">Flume</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/大数据/">大数据</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-zookeeper-api" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2014/06/25/zookeeper-api/" class="article-date">
+  <time datetime="2014-06-25T09:27:01.000Z" itemprop="datePublished">2014-06-25</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Zookeeper/">Zookeeper</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2014/06/25/zookeeper-api/">zookeeper场景使用</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>##服务器注册与状态监控<br>zookeeper有一种类型为<code>EPHEMERAL</code>的节点，这种节点的特点是当创建它的server（或者应用）终止的时候，它会自动删除，利用这个特性，我们可以利用zookeeper的<code>getChildren</code>方法，监控它的父节点的子节点列表的变化，进而做进一步处理。</p>
+<p>服务器注册的样例代码如下：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">package</span> com.louz.zookeeper;</div><div class="line"></div><div class="line"><span class="keyword">import</span> java.io.IOException;</div><div class="line"></div><div class="line"><span class="keyword">import</span> org.apache.zookeeper.KeeperException;</div><div class="line"><span class="keyword">import</span> org.apache.zookeeper.ZooDefs.Ids;</div><div class="line"><span class="keyword">import</span> org.apache.zookeeper.CreateMode;</div><div class="line"><span class="keyword">import</span> org.apache.zookeeper.ZooKeeper;</div><div class="line"></div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ServerRegister</span> </span>&#123;</div><div class="line"></div><div class="line">    <span class="comment">/**</span></div><div class="line">     * <span class="doctag">@param</span> args 该数组元素个数必须为1，用于表明注册的服务名称</div><div class="line">     * <span class="doctag">@throws</span> InterruptedException </div><div class="line">     * <span class="doctag">@throws</span> IOException </div><div class="line">     * <span class="doctag">@throws</span> KeeperException </div><div class="line">     */</div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> InterruptedException, IOException, KeeperException </span>&#123;</div><div class="line">        <span class="keyword">if</span> (args == <span class="keyword">null</span> || args.length != <span class="number">1</span>) &#123;</div><div class="line">            System.err.println(<span class="string">"It must has one and only one arg"</span>);</div><div class="line">            System.exit(<span class="number">1</span>);</div><div class="line">        &#125;</div><div class="line">        </div><div class="line">        ServerRegister s = <span class="keyword">new</span> ServerRegister();</div><div class="line">        s.connectZookeeper(args[<span class="number">0</span>]);</div><div class="line">        </div><div class="line">        Thread.sleep(<span class="number">10000</span>);</div><div class="line"></div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">connectZookeeper</span><span class="params">(String serverName)</span> <span class="keyword">throws</span> IOException, KeeperException, InterruptedException </span>&#123;</div><div class="line">        ZooKeeper zk = <span class="keyword">new</span> ZooKeeper(<span class="string">"hadoop2:2181"</span>, <span class="number">5000</span>, <span class="keyword">null</span>);</div><div class="line">        </div><div class="line">        <span class="comment">// /servers节点必须已经在zookeeper上存在</span></div><div class="line">        String createdPath = zk.create(<span class="string">"/servers/"</span> + serverName, serverName.getBytes(), Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);</div><div class="line">        </div><div class="line">        System.out.println(<span class="string">"Created Path: "</span> + createdPath);</div><div class="line">    &#125;</div><div class="line"></div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>监听程序的代码，需要注意的是，由于zookeeper的监听都是只监听一次，所以在监控到变化之后，需要重新再注册一次监听器：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">package</span> com.louz.zookeeper;</div><div class="line"></div><div class="line"><span class="keyword">import</span> java.io.IOException;</div><div class="line"><span class="keyword">import</span> java.util.ArrayList;</div><div class="line"><span class="keyword">import</span> java.util.List;</div><div class="line"></div><div class="line"><span class="keyword">import</span> org.apache.zookeeper.KeeperException;</div><div class="line"><span class="keyword">import</span> org.apache.zookeeper.WatchedEvent;</div><div class="line"><span class="keyword">import</span> org.apache.zookeeper.Watcher;</div><div class="line"><span class="keyword">import</span> org.apache.zookeeper.ZooKeeper;</div><div class="line"><span class="keyword">import</span> org.apache.zookeeper.data.Stat;</div><div class="line"></div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ServerListener2</span> </span>&#123;</div><div class="line"></div><div class="line">    <span class="keyword">private</span> <span class="keyword">static</span> ZooKeeper zk;</div><div class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">static</span> String monitorNode = <span class="string">"/servers"</span>;</div><div class="line">    </div><div class="line">    <span class="comment">/**</span></div><div class="line">     * <span class="doctag">@param</span> args</div><div class="line">     * <span class="doctag">@throws</span> IOException </div><div class="line">     * <span class="doctag">@throws</span> InterruptedException </div><div class="line">     */</div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> IOException, InterruptedException </span>&#123;</div><div class="line">        zk = <span class="keyword">new</span> ZooKeeper(<span class="string">"hadoop2:2181"</span>, <span class="number">5000</span>, <span class="keyword">null</span>);</div><div class="line">        </div><div class="line">        updateServerList();      <span class="comment">// 触发第一次监听</span></div><div class="line">        Thread.sleep(<span class="number">30000</span>);     <span class="comment">// 延时30秒再结束进程，以便演示应用注册时，该监听进程的变化</span></div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">protected</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">updateServerList</span><span class="params">()</span> </span>&#123;</div><div class="line">        List&lt;String&gt; serverList = <span class="keyword">new</span> ArrayList&lt;String&gt;();</div><div class="line">        </div><div class="line">        <span class="keyword">try</span> &#123;</div><div class="line">            </div><div class="line">            List&lt;String&gt; children = zk.getChildren(monitorNode, <span class="keyword">new</span> Watcher()&#123;</div><div class="line"></div><div class="line">                <span class="meta">@Override</span></div><div class="line">                <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">process</span><span class="params">(WatchedEvent event)</span> </span>&#123;</div><div class="line">                    System.out.println(event.getPath());</div><div class="line">                    updateServerList();     <span class="comment">// 由于zookeeper的监听都是只监听一次，所以在监控到变化之后，需要重新再注册一次监听器</span></div><div class="line">                &#125;</div><div class="line">                </div><div class="line">            &#125;);</div><div class="line">            <span class="keyword">for</span> (String subName : children) &#123;</div><div class="line">                <span class="keyword">byte</span>[] data = zk.getData(monitorNode + <span class="string">"/"</span> + subName, <span class="keyword">false</span>, <span class="keyword">new</span> Stat());</div><div class="line">                serverList.add(<span class="keyword">new</span> String(data));</div><div class="line">            &#125;</div><div class="line">            </div><div class="line">            System.out.println(<span class="string">"Server list changed: "</span> + serverList);</div><div class="line">        &#125; <span class="keyword">catch</span> (KeeperException e) &#123;</div><div class="line">            <span class="comment">// TODO Auto-generated catch block</span></div><div class="line">            e.printStackTrace();</div><div class="line">        &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</div><div class="line">            <span class="comment">// TODO Auto-generated catch block</span></div><div class="line">            e.printStackTrace();</div><div class="line">        &#125;</div><div class="line">        </div><div class="line">    &#125;</div><div class="line"></div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p><strong>演示：</strong></p>
+<ol>
+<li>先将<code>ServerRegister</code>打包成jar包，可通过Eclipse的<code>Export</code>-&gt;<code>Runnable JAR file</code>导出，我本地的名字为<code>zookeeper-server-register.jar</code>，留待后面使用</li>
+<li><p>运行<code>ServerListener2</code>的<code>main</code>函数，显示如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">Server list changed: []</div></pre></td></tr></table></figure>
+</li>
+<li><p>进入到<code>zookeeper-server-register.jar</code>所在目录，在命令行运行</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">E:\tmp\zookeeper&gt;java -jar zookeeper-server-register.jar server1</div><div class="line">SLF4J: Failed to load class &quot;org.slf4j.impl.StaticLoggerBinder&quot;.</div><div class="line">SLF4J: Defaulting to no-operation (NOP) logger implementation</div><div class="line">SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further detail</div><div class="line">s.</div><div class="line">Created Path: /servers/server1</div></pre></td></tr></table></figure>
+</li>
+</ol>
+<p>同时在<code>ServerListener2</code>的输出窗口可以看到:<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">Server list changed: []</div><div class="line">/servers</div><div class="line">Server list changed: [server1]</div></pre></td></tr></table></figure></p>
+<p>再新打开一个命令行窗口，运行<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">E:\tmp\zookeeper&gt;java -jar zookeeper-server-register.jar server2</div><div class="line">SLF4J: Failed to load class &quot;org.slf4j.impl.StaticLoggerBinder&quot;.</div><div class="line">SLF4J: Defaulting to no-operation (NOP) logger implementation</div><div class="line">SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further detail</div><div class="line">s.</div><div class="line">Created Path: /servers/server2</div></pre></td></tr></table></figure></p>
+<p>同时在<code>ServerListener2</code>的输出窗口可以看到:<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">Server list changed: []</div><div class="line">/servers</div><div class="line">Server list changed: [server1]</div><div class="line">/servers</div><div class="line">Server list changed: [server1, server2]</div></pre></td></tr></table></figure></p>
+<p>当<code>ServerRegister</code>的进程结束后，可以看到<code>ServerListener2</code>的输出窗口变化：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">Server list changed: []</div><div class="line">/servers</div><div class="line">Server list changed: [server1]</div><div class="line">/servers</div><div class="line">Server list changed: [server1, server2]</div><div class="line">/servers</div><div class="line">Server list changed: [server2]</div><div class="line">/servers</div><div class="line">Server list changed: []</div></pre></td></tr></table></figure></p>
+<p>说明<code>ServerListener2</code>可以监听到<code>/servers</code>的子节点的变化</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://louz.github.io/2014/06/25/zookeeper-api/" data-id="cixn1gs1w003mj8zo8sx53y6t" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Zookeeper/">Zookeeper</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/大数据/">大数据</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+
+
+  <nav id="page-nav">
+    <a class="extend prev" rel="prev" href="/page/3/">&laquo; __('prev')</a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><span class="page-number current">4</span><a class="page-number" href="/page/5/">5</a><a class="extend next" rel="next" href="/page/5/">__('next') &raquo;</a>
+  </nav>
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/Flume/">Flume</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/HBase/">HBase</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/Hadoop/">Hadoop</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/Hexo/">Hexo</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/IE/">IE</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/JBoss/">JBoss</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/Java/">Java</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linux/">Linux</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/MS-Word/">MS Word</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/MySQL/">MySQL</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/QuickBuild/">QuickBuild</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/R/">R</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/Sqoop/">Sqoop</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/Zookeeper/">Zookeeper</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/ant/">ant</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/应用/">应用</a><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/应用/Markdown/">Markdown</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/应用/Sublime/">Sublime</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/应用/Windows/">Windows</a></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/">开发</a><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/开发/AWS/">AWS</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/BDD/">BDD</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/Hadoop/">Hadoop</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/JDK/">JDK</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/JVM/">JVM</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/Java/">Java</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/Kafka/">Kafka</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/Maven/">Maven</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/RESTFUL/">RESTFUL</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/Spring/">Spring</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/Tomcat/">Tomcat</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/docker/">docker</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/http/">http</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/代码质量/">代码质量</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/单元测试/">单元测试</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/数据库/">数据库</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/设计模式/">设计模式</a></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/杂谈/">杂谈</a><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/杂谈/移动工作站/">移动工作站</a></li></ul></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/AWS/">AWS</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CentOS/">CentOS</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Cucumber/">Cucumber</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/DB2/">DB2</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Design-Pattern/">Design Pattern</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Flume/">Flume</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/HBase-API/">HBase API</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/HBase-Shell/">HBase Shell</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/HBase配置/">HBase配置</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/HDFS/">HDFS</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Hadoop/">Hadoop</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Hexo/">Hexo</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/IE/">IE</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/JBoss/">JBoss</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/JDK/">JDK</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/JNDI/">JNDI</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/JVM/">JVM</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Java/">Java</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux/">Linux</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux-Shell/">Linux Shell</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Markdown/">Markdown</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Maven/">Maven</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/MySQL/">MySQL</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/PMD/">PMD</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/QuickBuild/">QuickBuild</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/R/">R</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Restful/">Restful</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Scala/">Scala</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Spark/">Spark</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Spring/">Spring</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Sqoop/">Sqoop</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Sublime/">Sublime</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/WTG/">WTG</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Zookeeper/">Zookeeper</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ant/">ant</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/checkstyle/">checkstyle</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/docker/">docker</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/dockerfile/">dockerfile</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hexo/">hexo</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/http/">http</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/jersey/">jersey</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/kafka/">kafka</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/maven/">maven</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/redis/">redis</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/spark/">spark</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/tomcat/">tomcat</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/word技巧/">word技巧</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/中文/">中文</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/代码质量/">代码质量</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/单元测试/">单元测试</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/同步/">同步</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/大数据/">大数据</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/并发编程/">并发编程</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/正则表达式/">正则表达式</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/测试覆盖率/">测试覆盖率</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/设计模式/">设计模式</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/AWS/" style="font-size: 10px;">AWS</a> <a href="/tags/CentOS/" style="font-size: 10px;">CentOS</a> <a href="/tags/Cucumber/" style="font-size: 10px;">Cucumber</a> <a href="/tags/DB2/" style="font-size: 10px;">DB2</a> <a href="/tags/Design-Pattern/" style="font-size: 10px;">Design Pattern</a> <a href="/tags/Flume/" style="font-size: 10px;">Flume</a> <a href="/tags/HBase-API/" style="font-size: 10px;">HBase API</a> <a href="/tags/HBase-Shell/" style="font-size: 10px;">HBase Shell</a> <a href="/tags/HBase配置/" style="font-size: 10px;">HBase配置</a> <a href="/tags/HDFS/" style="font-size: 10px;">HDFS</a> <a href="/tags/Hadoop/" style="font-size: 13.33px;">Hadoop</a> <a href="/tags/Hexo/" style="font-size: 10px;">Hexo</a> <a href="/tags/IE/" style="font-size: 10px;">IE</a> <a href="/tags/JBoss/" style="font-size: 10px;">JBoss</a> <a href="/tags/JDK/" style="font-size: 10px;">JDK</a> <a href="/tags/JNDI/" style="font-size: 10px;">JNDI</a> <a href="/tags/JVM/" style="font-size: 10px;">JVM</a> <a href="/tags/Java/" style="font-size: 10px;">Java</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/Linux-Shell/" style="font-size: 10px;">Linux Shell</a> <a href="/tags/Markdown/" style="font-size: 10px;">Markdown</a> <a href="/tags/Maven/" style="font-size: 13.33px;">Maven</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/PMD/" style="font-size: 10px;">PMD</a> <a href="/tags/QuickBuild/" style="font-size: 10px;">QuickBuild</a> <a href="/tags/R/" style="font-size: 10px;">R</a> <a href="/tags/Restful/" style="font-size: 10px;">Restful</a> <a href="/tags/Scala/" style="font-size: 10px;">Scala</a> <a href="/tags/Spark/" style="font-size: 10px;">Spark</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Sqoop/" style="font-size: 10px;">Sqoop</a> <a href="/tags/Sublime/" style="font-size: 10px;">Sublime</a> <a href="/tags/WTG/" style="font-size: 10px;">WTG</a> <a href="/tags/Zookeeper/" style="font-size: 13.33px;">Zookeeper</a> <a href="/tags/ant/" style="font-size: 10px;">ant</a> <a href="/tags/checkstyle/" style="font-size: 10px;">checkstyle</a> <a href="/tags/docker/" style="font-size: 16.67px;">docker</a> <a href="/tags/dockerfile/" style="font-size: 10px;">dockerfile</a> <a href="/tags/hexo/" style="font-size: 10px;">hexo</a> <a href="/tags/http/" style="font-size: 10px;">http</a> <a href="/tags/jersey/" style="font-size: 10px;">jersey</a> <a href="/tags/kafka/" style="font-size: 10px;">kafka</a> <a href="/tags/maven/" style="font-size: 10px;">maven</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/spark/" style="font-size: 10px;">spark</a> <a href="/tags/tomcat/" style="font-size: 10px;">tomcat</a> <a href="/tags/word技巧/" style="font-size: 10px;">word技巧</a> <a href="/tags/中文/" style="font-size: 10px;">中文</a> <a href="/tags/代码质量/" style="font-size: 10px;">代码质量</a> <a href="/tags/单元测试/" style="font-size: 10px;">单元测试</a> <a href="/tags/同步/" style="font-size: 10px;">同步</a> <a href="/tags/大数据/" style="font-size: 20px;">大数据</a> <a href="/tags/并发编程/" style="font-size: 10px;">并发编程</a> <a href="/tags/正则表达式/" style="font-size: 10px;">正则表达式</a> <a href="/tags/测试覆盖率/" style="font-size: 10px;">测试覆盖率</a> <a href="/tags/设计模式/" style="font-size: 10px;">设计模式</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/10/">October 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/09/">September 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/08/">August 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/07/">July 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/06/">June 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/04/">April 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/01/">January 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/12/">December 2015</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/11/">November 2015</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/09/">September 2015</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/06/">June 2015</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/05/">May 2015</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/04/">April 2015</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/02/">February 2015</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/11/">November 2014</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/08/">August 2014</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/06/">June 2014</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/05/">May 2014</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/02/">February 2014</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2016/10/17/spark-faq/">Spark常见问题</a>
+          </li>
+        
+          <li>
+            <a href="/2016/10/08/scala-learning/">Scala学习笔记</a>
+          </li>
+        
+          <li>
+            <a href="/2016/10/05/hexo-theme-modify/">Hexo Markdown语法效果</a>
+          </li>
+        
+          <li>
+            <a href="/2016/09/30/spring-howto/">Spring常见问题</a>
+          </li>
+        
+          <li>
+            <a href="/2016/09/29/test-coverage/">测试覆盖率配置</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2017 Jason Lu<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  <link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+  <script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>

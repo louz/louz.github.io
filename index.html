@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>Jason&#39;s Blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta property="og:type" content="website">
+<meta property="og:title" content="Jason's Blog">
+<meta property="og:url" content="http://louz.github.io/index.html">
+<meta property="og:site_name" content="Jason's Blog">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Jason's Blog">
+  
+    <link rel="alternate" href="/atom.xml" title="Jason&#39;s Blog" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  <link rel="stylesheet" href="/css/style.css">
+  
+
+</head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Jason&#39;s Blog</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" results="0" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://louz.github.io"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main">
+  
+    <article id="post-spark-faq" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2016/10/17/spark-faq/" class="article-date">
+  <time datetime="2016-10-17T07:11:06.000Z" itemprop="datePublished">2016-10-17</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/开发/">开发</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/10/17/spark-faq/">Spark常见问题</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="Spark-Streaming消费Kafka数据"><a href="#Spark-Streaming消费Kafka数据" class="headerlink" title="Spark Streaming消费Kafka数据"></a>Spark Streaming消费Kafka数据</h2><h3 id="首先考虑Spark-Streaming消费Kafka数据时，如何保证数据不丢失"><a href="#首先考虑Spark-Streaming消费Kafka数据时，如何保证数据不丢失" class="headerlink" title="首先考虑Spark Streaming消费Kafka数据时，如何保证数据不丢失"></a>首先考虑Spark Streaming消费Kafka数据时，如何保证数据不丢失</h3><blockquote>
+<p><a href="http://getindata.com/blog/post/recent-evolution-of-zero-data-loss-guarantee-in-spark-streaming-with-kafka/" target="_blank" rel="external">参考资料:Recent Evolution of Zero Data Loss Guarantee in Spark Streaming With Kafka</a><br><a href="https://databricks.com/blog/2015/03/30/improvements-to-kafka-integration-of-spark-streaming.html" target="_blank" rel="external">Improvements to Kafka integration of Spark Streaming</a></p>
+</blockquote>
+<p>丢失的情况包括：</p>
+<ol>
+<li>Spark Streaming正在读取Kafka的数据，突然挂掉；</li>
+<li>Spark Streaming读取完Kafka的数据，在保存offset前（包括保存到Kafka的zookeeper或者某种持久化存储）挂掉。</li>
+</ol>
+<p>Spark Streaming从1.3以后提供2种方式消费Kafka数据，一种利用<code>Receiver</code>读取Kafka数据，生成DStream，然后供后续的task进行处理；另一种通过<code>Driver</code>计算每批次要消费的offset范围，由task的<code>Executor</code>通过Kafka简单API直接消费</p>
+<p><em>问题：两种方式产生的DStream中的RDD进行partition的逻辑各是什么？第二种方式Executor的个数是否和Kafka主题的partition数目一致？</em></p>
+<p>下面分别看看两种方式有哪些容错手段：<br><strong>方式一：利用Receiver</strong><br>代码如下：<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">import</span> org.apache.spark.streaming.kafka._</div><div class="line"></div><div class="line">...</div><div class="line"><span class="keyword">val</span> kafkaStream = <span class="type">KafkaUtils</span>.createStream(streamingContext, </div><div class="line">     [<span class="type">ZK</span> quorum], [consumer group id], [per-topic number of <span class="type">Kafka</span> partitions to consume])</div></pre></td></tr></table></figure></p>
+<p>首先，保证<code>Receiver</code>的可靠性：<br><img src="img/spark-reliable-source-reliable-receiver.png" alt="图1. 利用Receiver消费Kafka数据"></p>
+<ol>
+<li>首先<code>Receiver</code>从Kafka读取数据</li>
+<li>得到一段数据，生成RDD(?)之后，数据复制到2个<code>Executor</code></li>
+<li>告知<code>Driver</code>该段Block的所有ID</li>
+<li>更新<code>Zookeeper</code>中的offset信息</li>
+</ol>
+<p>当<code>Receiver</code>挂掉重启后，可根据<code>Zookeeper</code>中的offset信息继续读取Kafka消息</p>
+<p>其次，保证<code>Driver</code>的可靠性：<br><img src="img/spark-metadata-checkpointing.png" alt="图1. Driver开启checkpoint"></p>
+<p>开启checkpoint机制后，driver会把以下信息保存到HDFS等可靠存储上：</p>
+<ol>
+<li>配置信息</li>
+<li>代码</li>
+<li>一些排队等待处理但没有完成的RDD（仅仅是metadata，而不是data）</li>
+</ol>
+<p>这样，在Driver挂掉重启后，能根据以上信息重新构造Driver继续运行</p>
+<p>但即使做了上述的2项设置，仍然存在丢失数据的可能，主要是以下的场景：<br>回到图1的场景下</p>
+<ol>
+<li>在第2步，数据正确复制到2个Executor，并缓存在它们的内存中；</li>
+<li>Receiver告知Kafka消息已消费（更新了ZK中的offset）</li>
+<li>Executor开始处理缓存在内存中的数据</li>
+<li>这时，Driver挂了</li>
+<li>由于Spark的机制，Driver挂了之后，由它启动的所有Executor都要kill掉</li>
+<li>在处理数据的Executor进程被kill掉，缓存的内存自然也没有了，但由于Receiver认为这些数据已经消费了，因此这部分数据无法再恢复。</li>
+</ol>
+<p>于是，从Spark1.2开始引入一个WAL（Write ahead log）的东东，简单来说就是在Receiver把数据复制到Executor前，先写到可靠存储上，如图：<br><img src="img/spark-wal.png" alt="图3. 加上WAL的完整处理逻辑"></p>
+<p>自此，再也不用担心数据会丢失了。</p>
+<p><strong>方式二：Direct Stream</strong><br><img src="img/spark-kafka-direct-api.png" alt="图4. 使用Direct Stream"></p>
+<ol>
+<li>一开始Driver负责从ZK查询每个topic/partition的最新offset</li>
+<li>计算下个batch的offset范围</li>
+<li>将offset范围交给Executor</li>
+<li>Executor利用Kafka的SimpleConsumer API访问Kafka，消费消息</li>
+<li>Executor计算成功后通知Driver，Driver会将offset信息保存到checkpoint中</li>
+</ol>
+<blockquote>
+<p><a href="http://blog.cloudera.com/blog/2015/03/exactly-once-spark-streaming-from-apache-kafka/" target="_blank" rel="external">Exactly-once Spark Streaming from Apache Kafka</a>——对内部实现说得比较清楚</p>
+</blockquote>
+<h3 id="BUT，如果要保证数据要且只能消费一次呢？"><a href="#BUT，如果要保证数据要且只能消费一次呢？" class="headerlink" title="BUT，如果要保证数据要且只能消费一次呢？"></a>BUT，如果要保证数据要且只能消费一次呢？</h3><p>设想一下如果在Receiver更新ZK之前挂掉了，如下图：<br><img src="img/spark-wall-at-least-once-delivery.png" alt="图5. Receiver更新ZK之前挂掉的情况"></p>
+<ol>
+<li>Kafka的消息已经成功通过WAL写进HDFS</li>
+<li>Spark Streaming也已经成功处理完这些数据</li>
+<li>Receiver更新ZK的offset之前挂掉！</li>
+<li>Receiver重启恢复，从WAL中恢复上次消费的数据</li>
+<li>继续消费Kafka消息，但由于Receiver使用的是Kafka的高级API，会根据ZK中记录的已消费的offset往后继续消费，因此有部分消息会重复消费计算</li>
+</ol>
+<h3 id="最后考虑性能"><a href="#最后考虑性能" class="headerlink" title="最后考虑性能"></a>最后考虑性能</h3><p><code>WAL</code>有2个缺点：</p>
+<ol>
+<li><p>由于从Receiver取到的数据要先持久化，因此会降低消费的吞吐量（一个解决办法就是增加Receiver），代码如下：</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">val</span> kafkaParams: <span class="type">Map</span>[<span class="type">String</span>, <span class="type">String</span>] = <span class="type">Map</span>(<span class="string">"group.id"</span> -&gt; <span class="string">"terran"</span>, <span class="comment">/* ignore rest */</span>)</div><div class="line"><span class="keyword">val</span> numStreams = <span class="number">5</span></div><div class="line"><span class="keyword">val</span> kafkaStreams = (<span class="number">1</span> to numStreams).map &#123; i =&gt; <span class="type">KafkaUtils</span>.createStream(..., kafkaParams) &#125;</div><div class="line"><span class="keyword">val</span> unifiedStream = streamingContext.union(kafkaStreams)</div><div class="line">unifiedStream.print()</div></pre></td></tr></table></figure>
+</li>
+<li><p>增加存储空间：同一份数据在Kafka有一份，在HDFS也有一份</p>
+</li>
+</ol>
+<p><a href="http://blog.csdn.net/stark_summer/article/details/44038247" target="_blank" rel="external">参考资料1</a><br><a href="http://spark.apache.org/docs/1.3.0/streaming-programming-guide.html#input-dstreams-and-receivers" target="_blank" rel="external">参考资料2</a></p>
+<ol>
+<li>创建多个<code>Input DStreams</code><figure class="highlight scala"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">val</span> kafkaParams: <span class="type">Map</span>[<span class="type">String</span>, <span class="type">String</span>] = <span class="type">Map</span>(<span class="string">"group.id"</span> -&gt; <span class="string">"terran"</span>, <span class="comment">/* ignore rest */</span>)</div><div class="line"><span class="keyword">val</span> numStreams = <span class="number">5</span></div><div class="line"><span class="keyword">val</span> kafkaStreams = (<span class="number">1</span> to numStreams).map &#123; i =&gt; <span class="type">KafkaUtils</span>.createStream(..., kafkaParams) &#125;</div><div class="line"><span class="keyword">val</span> unifiedStream = streamingContext.union(kafkaStreams)</div><div class="line">unifiedStream.print()</div></pre></td></tr></table></figure>
+</li>
+</ol>
+<p>按以上方式创建的5个Input DStream，都是Kafka消费组terran的成员，它们可以共同消费Kafka特定主题的消息，在<code>KafkaUtils.createStream</code>方法中，可以设置单个<code>Input DStream</code>的消费者线程数</p>
+<ol>
+<li>读取方式<br><a href="http://group.jobbole.com/15559/" target="_blank" rel="external">http://group.jobbole.com/15559/</a></li>
+</ol>
+<p>##<br><a href="https://github.com/jacksu/utils4s/blob/master/spark-knowledge/md/spark_streaming%E4%BD%BF%E7%94%A8kafka%E4%BF%9D%E8%AF%81%E6%95%B0%E6%8D%AE%E9%9B%B6%E4%B8%A2%E5%A4%B1.md" target="_blank" rel="external">https://github.com/jacksu/utils4s/blob/master/spark-knowledge/md/spark_streaming%E4%BD%BF%E7%94%A8kafka%E4%BF%9D%E8%AF%81%E6%95%B0%E6%8D%AE%E9%9B%B6%E4%B8%A2%E5%A4%B1.md</a></p>
+<h2 id="RDD的partition"><a href="#RDD的partition" class="headerlink" title="RDD的partition"></a>RDD的partition</h2><p><a href="https://www.dezyre.com/article/how-data-partitioning-in-spark-helps-achieve-more-parallelism/297" target="_blank" rel="external">参考文档</a></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://louz.github.io/2016/10/17/spark-faq/" data-id="cixn1gs11002lj8zotsrc2vn7" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Spark/">Spark</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-scala-learning" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2016/10/08/scala-learning/" class="article-date">
+  <time datetime="2016-10-08T07:53:13.000Z" itemprop="datePublished">2016-10-08</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/开发/">开发</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/10/08/scala-learning/">Scala学习笔记</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="特质-trait"><a href="#特质-trait" class="headerlink" title="特质(trait)"></a>特质(trait)</h2><p>特质(scala)和接口(java)的异同点：</p>
+<p>相同点：</p>
+<ol>
+<li>scala中的特质类似java中的接口（没有任何具体方法的时候），某个类可以实现多个特质。</li>
+<li></li>
+</ol>
+<p>不同点：</p>
+<ol>
+<li>特质可以有默认方法实现</li>
+<li>子类实现特质用<code>extends</code>关键字；实现接口用<code>implements</code></li>
+<li>实现多个特质时，中间用<code>with</code>连接；实现多个接口时，中间用<code>,</code>分割</li>
+</ol>
+<p>scala版本<br><figure class="highlight scala"><figcaption><span>ConsoleLogger.scala</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">ConsoleLogger</span> <span class="keyword">extends</span> <span class="title">Logger</span> <span class="keyword">with</span> <span class="title">Cloneable</span> <span class="keyword">with</span> <span class="title">Serializable</span> </span>&#123;</div><div class="line"></div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>java版本<br><figure class="highlight scala"><figcaption><span>ConsoleLogger.java</span></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">ConsoleLogger</span> <span class="title">implements</span> <span class="title">Logger</span>,<span class="title">Cloneable</span>,<span class="title">Serializable</span> </span>&#123;</div><div class="line"></div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>JDK 8是否也有类似？</p>
+<hr>
+<h2 id="构造不可修改数据类"><a href="#构造不可修改数据类" class="headerlink" title="构造不可修改数据类"></a>构造不可修改数据类</h2><p>不可修改的数据类有各种好处：</p>
+<ol>
+<li>不用担心线程安全</li>
+<li>方便定位问题</li>
+<li>对象一旦被创建，就不用担心数据被错误修改</li>
+</ol>
+<p>Java语言实现不可变数据类主要有2种方法：</p>
+<ol>
+<li>只有构造函数和getter的类</li>
+<li>使用<code>Builder</code>模式</li>
+</ol>
+<blockquote>
+<p>方法1的主要问题在于：如果类的成员变量有多个（例如大于3个），而且不是必选的话，需要重载多个构造函数，在使用的时候容易造成混乱。</p>
+<p>方法2主要可参见《Effective Java 2nd Edition》的第2条</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ImmutableObject</span> </span>&#123;</div><div class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">int</span> a;    <span class="comment">// required</span></div><div class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">int</span> b;    <span class="comment">// required</span></div><div class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">int</span> c;    <span class="comment">// optional</span></div><div class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">int</span> d;    <span class="comment">// optional</span></div><div class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">int</span> e;    <span class="comment">// optional</span></div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">private</span> <span class="title">ImmutableObject</span><span class="params">(Builder builder)</span> </span>&#123;</div><div class="line">        <span class="keyword">this</span>.a = builder.a;</div><div class="line">        <span class="keyword">this</span>.b = builder.b;</div><div class="line">        <span class="keyword">this</span>.c = builder.c;</div><div class="line">        <span class="keyword">this</span>.d = builder.d;</div><div class="line">        <span class="keyword">this</span>.e = builder.e;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="meta">@Override</span></div><div class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">toString</span><span class="params">()</span> </span>&#123;</div><div class="line">        <span class="keyword">return</span> <span class="string">"ImmutableObject&#123;"</span> +</div><div class="line">                <span class="string">"a="</span> + a +</div><div class="line">                <span class="string">", b="</span> + b +</div><div class="line">                <span class="string">", c="</span> + c +</div><div class="line">                <span class="string">", d="</span> + d +</div><div class="line">                <span class="string">", e="</span> + e +</div><div class="line">                <span class="string">'&#125;'</span>;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">Builder</span> </span>&#123;</div><div class="line">        <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">int</span> a;</div><div class="line">        <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">int</span> b;</div><div class="line"></div><div class="line">        <span class="comment">// 可以设置默认值</span></div><div class="line">        <span class="keyword">private</span> <span class="keyword">int</span> c = <span class="number">1</span>;</div><div class="line">        <span class="keyword">private</span> <span class="keyword">int</span> d = <span class="number">2</span>;</div><div class="line">        <span class="keyword">private</span> <span class="keyword">int</span> e = <span class="number">3</span>;</div><div class="line"></div><div class="line">        <span class="function"><span class="keyword">public</span> <span class="title">Builder</span><span class="params">(<span class="keyword">int</span> a, <span class="keyword">int</span> b)</span> </span>&#123;</div><div class="line">            <span class="keyword">this</span>.a = a;</div><div class="line">            <span class="keyword">this</span>.b = b;</div><div class="line">        &#125;</div><div class="line"></div><div class="line">        <span class="function"><span class="keyword">public</span> Builder <span class="title">c</span><span class="params">(<span class="keyword">int</span> c)</span> </span>&#123;</div><div class="line">            <span class="keyword">this</span>.c = c;</div><div class="line">            <span class="keyword">return</span> <span class="keyword">this</span>;</div><div class="line">        &#125;</div><div class="line"></div><div class="line">        <span class="function"><span class="keyword">public</span> Builder <span class="title">d</span><span class="params">(<span class="keyword">int</span> d)</span> </span>&#123;</div><div class="line">            <span class="keyword">this</span>.d = d;</div><div class="line">            <span class="keyword">return</span> <span class="keyword">this</span>;</div><div class="line">        &#125;</div><div class="line"></div><div class="line">        <span class="function"><span class="keyword">public</span> Builder <span class="title">e</span><span class="params">(<span class="keyword">int</span> e)</span> </span>&#123;</div><div class="line">            <span class="keyword">this</span>.e = e;</div><div class="line">            <span class="keyword">return</span> <span class="keyword">this</span>;</div><div class="line">        &#125;</div><div class="line"></div><div class="line">        <span class="function"><span class="keyword">public</span> ImmutableObject <span class="title">build</span><span class="params">()</span> </span>&#123;</div><div class="line">            <span class="keyword">return</span> <span class="keyword">new</span> ImmutableObject(<span class="keyword">this</span>);</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</div><div class="line">        ImmutableObject obj = <span class="keyword">new</span> Builder(<span class="number">10</span>, <span class="number">20</span>)</div><div class="line">                .c(<span class="number">30</span>)</div><div class="line">                .d(<span class="number">40</span>)</div><div class="line">                .build();</div><div class="line"></div><div class="line">        System.out.println(obj);</div><div class="line">    &#125;</div><div class="line"></div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>输出结果为：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">ImmutableObject&#123;a=10, b=20, c=30, d=40, e=3&#125;</div></pre></td></tr></table></figure></p>
+<p>scala语言实现有3种方案</p>
+<ol>
+<li>Immutable Classes</li>
+<li>Case Classes</li>
+<li>Tuples</li>
+</ol>
+<blockquote>
+<p>Immutable Class：将类的主构造函数中的参数都设为<code>val</code>，还可以设置参数的默认值</p>
+</blockquote>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">ImmutableScalaClass</span>(<span class="params"></span></span></div><div class="line">  val a:<span class="type">Int</span>,</div><div class="line">  val b:<span class="type">Int</span>,</div><div class="line">  val c:<span class="type">Int</span> = 1,</div><div class="line">  val d:<span class="type">Int</span> = 2,</div><div class="line">  val e:<span class="type">Int</span> = 3) &#123;</div><div class="line"></div><div class="line">  <span class="keyword">override</span> <span class="function"><span class="keyword">def</span> <span class="title">toString</span> </span>= <span class="string">s"ImmutableScalaClass(a=<span class="subst">$a</span>, b=<span class="subst">$b</span>, c=<span class="subst">$c</span>, d=<span class="subst">$d</span>, e=<span class="subst">$e</span>)"</span></div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="class"><span class="keyword">object</span> <span class="title">ImmutableScalaObject</span> </span>&#123;</div><div class="line">  <span class="function"><span class="keyword">def</span> <span class="title">main</span></span>(args: <span class="type">Array</span>[<span class="type">String</span>]): <span class="type">Unit</span> = &#123;</div><div class="line">    <span class="keyword">val</span> obj = <span class="keyword">new</span> <span class="type">ImmutableScalaClass</span>(</div><div class="line">      a = <span class="number">10</span>,</div><div class="line">      b = <span class="number">20</span>,</div><div class="line">      c = <span class="number">30</span>,</div><div class="line">      d = <span class="number">40</span></div><div class="line">    )</div><div class="line"></div><div class="line">    print(obj)</div><div class="line">  &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>输出：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">ImmutableScalaClass(a=10, b=20, c=30, d=40, e=3)</div></pre></td></tr></table></figure></p>
+<p>可以看出，scala的语法比java的Builder模式要清晰和直观很多</p>
+<blockquote>
+<p>Case Classes: 将类设为case class</p>
+</blockquote>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">case</span> <span class="class"><span class="keyword">class</span> <span class="title">CaseScalaClass</span>(<span class="params"></span></span></div><div class="line">                           val a: <span class="type">Int</span>,</div><div class="line">                           val b: <span class="type">Int</span>,</div><div class="line">                           val c: <span class="type">Int</span> = 1,</div><div class="line">                           val d: <span class="type">Int</span> = 2,</div><div class="line">                           val e: <span class="type">Int</span> = 3)</div><div class="line"></div><div class="line"><span class="class"><span class="keyword">object</span> <span class="title">CaseScalaObject</span> </span>&#123;</div><div class="line">  <span class="function"><span class="keyword">def</span> <span class="title">main</span></span>(args: <span class="type">Array</span>[<span class="type">String</span>]): <span class="type">Unit</span> = &#123;</div><div class="line">    <span class="keyword">val</span> obj = <span class="keyword">new</span> <span class="type">CaseScalaClass</span>(</div><div class="line">      a = <span class="number">10</span>,</div><div class="line">      b = <span class="number">20</span>,</div><div class="line">      c = <span class="number">30</span>,</div><div class="line">      d = <span class="number">40</span></div><div class="line">    )</div><div class="line"></div><div class="line">    print(obj)</div><div class="line">  &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>输出：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">CaseScalaClass(10,20,30,40,3)</div></pre></td></tr></table></figure></p>
+<p>由于case class默认实现了<code>toString</code>、<code>equals</code>、<code>hashCode</code>等方法，所以写法更简洁</p>
+<blockquote>
+<p>Tuples</p>
+</blockquote>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">object</span> <span class="title">TupleDemo</span> </span>&#123;</div><div class="line">  <span class="function"><span class="keyword">def</span> <span class="title">main</span></span>(args: <span class="type">Array</span>[<span class="type">String</span>]): <span class="type">Unit</span> = &#123;</div><div class="line">    <span class="keyword">val</span> t = (<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>)</div><div class="line"></div><div class="line">    print(t._1, t._2, t._3, t._4, t._5)</div><div class="line">  &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>输出：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">(1,2,3,4,5)</div></pre></td></tr></table></figure></p>
+<p>可以看出，<code>Tuple</code>不用创建新的类，使用简单，当然用途也很单一，单纯作为一个容器使用</p>
+<hr>
+<h2 id="主构造函数"><a href="#主构造函数" class="headerlink" title="主构造函数"></a>主构造函数</h2><h2 id="函数与过程"><a href="#函数与过程" class="headerlink" title="函数与过程"></a>函数与过程</h2><p><strong>函数</strong>：有返回值的方法，格式为：<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">fuc</span></span>(x: <span class="type">Int</span>):<span class="type">Int</span> = &#123; <span class="comment">// 有=号，返回值类型可以显示指定，不指定的话编译器也能推断出来（递归函数必须指定返回值类型）</span></div><div class="line">    ......</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p><strong>过程</strong>：没有返回值（或者说返回值类型为<code>Unit</code>）的函数<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">fuc</span></span>(x: <span class="type">Int</span>) &#123; <span class="comment">// 没有=号</span></div><div class="line">    ......</div><div class="line">&#125;</div><div class="line"></div><div class="line">或者</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">fuc</span></span>(x: <span class="type">Int</span>):<span class="type">Unit</span> = &#123; <span class="comment">// 有=号，但返回值类型为Unit</span></div><div class="line">    ......</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<h2 id="闭包"><a href="#闭包" class="headerlink" title="闭包"></a>闭包</h2><p>可以简单理解成：闭包就是用函数创建函数，创建时用到的参数或者外部变量，在结果函数中都会保存它们的引用</p>
+<p>例子：scala实现<br><figure class="highlight scala"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">object</span> <span class="title">ClosureFunctionDemo</span> </span>&#123;</div><div class="line">  <span class="function"><span class="keyword">def</span> <span class="title">makeClosureFunction</span></span>(x: <span class="type">Int</span>, func: <span class="type">Int</span> =&gt; <span class="type">String</span>) = &#123;</div><div class="line">    i: <span class="type">Int</span> =&gt; func(x * i)</div><div class="line">  &#125;</div><div class="line"></div><div class="line">  <span class="function"><span class="keyword">def</span> <span class="title">baseFunction</span></span>(i: <span class="type">Int</span>): <span class="type">String</span> = &#123;</div><div class="line">    <span class="string">"This is string: "</span> + i</div><div class="line">  &#125;</div><div class="line"></div><div class="line">  <span class="function"><span class="keyword">def</span> <span class="title">main</span></span>(args: <span class="type">Array</span>[<span class="type">String</span>]): <span class="type">Unit</span> = &#123;</div><div class="line">    <span class="comment">// 调用makeClosureFunction时，可以理解成将100和baseFunction两个参数作为closureFunction的成员变量存放起来</span></div><div class="line">    <span class="keyword">val</span> closureFunction = makeClosureFunction(<span class="number">100</span>, baseFunction)</div><div class="line"></div><div class="line">    <span class="comment">// 调用closureFunction(10)时，利用成员变量100和baseFunction以及入参10进行计算，返回结果</span></div><div class="line">    print(closureFunction(<span class="number">10</span>))</div><div class="line">  &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>java实现<br><figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">JavaClosureFunction</span> </span>&#123;</div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</div><div class="line">        <span class="comment">/* JDK 7 mode</span></div><div class="line">        BaseFunction baseFunction = new BaseFunction() &#123;</div><div class="line">            @Override</div><div class="line">            public String call(int i) &#123;</div><div class="line">                return "This is string: " + i;</div><div class="line">            &#125;</div><div class="line">        &#125;;</div><div class="line">        */</div><div class="line"></div><div class="line">        <span class="comment">// JDK 8 mode</span></div><div class="line">        BaseFunction baseFunction = i -&gt; <span class="string">"This is string: "</span> + i;</div><div class="line"></div><div class="line">        ClosureFunction closureFunction = makeClosureFunction(<span class="number">100</span>, baseFunction);</div><div class="line">        System.out.println(closureFunction.call(<span class="number">10</span>));</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">static</span> ClosureFunction <span class="title">makeClosureFunction</span><span class="params">(<span class="keyword">int</span> i, BaseFunction baseFunction)</span> </span>&#123;</div><div class="line">        <span class="comment">/* JDK 7 mode</span></div><div class="line">        return new ClosureFunction() &#123;</div><div class="line">            @Override</div><div class="line">            public String call(int x) &#123;</div><div class="line">                return baseFunction.call(x * i);</div><div class="line">            &#125;</div><div class="line">        &#125;;</div><div class="line">        */</div><div class="line"></div><div class="line">        <span class="comment">// JDK 8 mode</span></div><div class="line">        <span class="keyword">return</span> x -&gt; baseFunction.call(x * i);</div><div class="line">    &#125;</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">BaseFunction</span> </span>&#123;</div><div class="line">    <span class="function">String <span class="title">call</span><span class="params">(<span class="keyword">int</span> i)</span></span>;</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">ClosureFunction</span> </span>&#123;</div><div class="line">    <span class="function">String <span class="title">call</span><span class="params">(<span class="keyword">int</span> i)</span></span>;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://louz.github.io/2016/10/08/scala-learning/" data-id="cixn1gs15002rj8zokqco1xzl" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Scala/">Scala</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-hexo-theme-modify" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2016/10/05/hexo-theme-modify/" class="article-date">
+  <time datetime="2016-10-05T13:32:53.000Z" itemprop="datePublished">2016-10-05</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/应用/">应用</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/10/05/hexo-theme-modify/">Hexo Markdown语法效果</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p><a href="https://hexo.io/docs/tag-plugins.html" target="_blank" rel="external">Hexo官方文档</a></p>
+<h2 id="引用（修改过）"><a href="#引用（修改过）" class="headerlink" title="引用（修改过）"></a>引用（修改过）</h2><blockquote>
+<p>Coffee. The finest organic suspension ever devised… I beat the Borg with it. - Captain Janeway<br>line 2</p>
+<blockquote>
+<p>line 3<br>line 4 </p>
+</blockquote>
+</blockquote>
+<hr>
+<h2 id="带标题代码"><a href="#带标题代码" class="headerlink" title="带标题代码"></a>带标题代码</h2><p>语法：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">&#123;% codeblock [lang:language] [标题] [链接] [链接文字] %&#125;</div><div class="line"></div><div class="line">代码块</div><div class="line"></div><div class="line">&#123;% endcodeblock %&#125;</div></pre></td></tr></table></figure></p>
+<p>例子：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">&#123;% codeblock lang:java Title http://a.html A.java %&#125;</div><div class="line">public class A &#123;</div><div class="line"></div><div class="line">&#125;</div><div class="line">&#123;% endcodeblock %&#125;</div></pre></td></tr></table></figure></p>
+<p>效果：<br><figure class="highlight java"><figcaption><span>Title</span><a href="http://a.html" target="_blank" rel="external">A.java</a></figcaption><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">A</span> </span>&#123;</div><div class="line"></div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://louz.github.io/2016/10/05/hexo-theme-modify/" data-id="cixn1grzq001cj8zoncfftnwh" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/hexo/">hexo</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-spring-howto" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2016/09/30/spring-howto/" class="article-date">
+  <time datetime="2016-09-30T09:06:26.000Z" itemprop="datePublished">2016-09-30</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/开发/">开发</a>►<a class="article-category-link" href="/categories/开发/Spring/">Spring</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/09/30/spring-howto/">Spring常见问题</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="如何配置定时任务"><a href="#如何配置定时任务" class="headerlink" title="如何配置定时任务"></a>如何配置定时任务</h2><p>Spring 3中涉及定时任务的主要是<code>TaskScheduler</code>接口，利用spring的task命名空间，可以很简单地配置一个定时任务，以下是配置一个简单的定时任务（每隔5秒执行一次beanA.methodA方法）<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"><span class="tag">&lt;<span class="name">beans</span> <span class="attr">xmlns:task</span>=<span class="string">"http://www.springframework.org/schema/task"</span></span></div><div class="line">  <span class="attr">......</span>&gt;</div><div class="line"></div><div class="line">    <span class="tag">&lt;<span class="name">task:scheduler</span> <span class="attr">id</span>=<span class="string">"myScheduler"</span> <span class="attr">pool-size</span>=<span class="string">"10"</span>/&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">task:scheduled-tasks</span> <span class="attr">scheduler</span>=<span class="string">"myScheduler"</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">task:scheduled</span> <span class="attr">ref</span>=<span class="string">"beanA"</span> <span class="attr">method</span>=<span class="string">"methodA"</span> <span class="attr">fixed-rate</span>=<span class="string">"5000"</span>/&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">task:scheduled-tasks</span>&gt;</span></div><div class="line">    ......</div><div class="line"><span class="tag">&lt;/<span class="name">beans</span>&gt;</span></div></pre></td></tr></table></figure></p>
+<h2 id="如何使用spring4-x配置RESTFUL-API"><a href="#如何使用spring4-x配置RESTFUL-API" class="headerlink" title="如何使用spring4.x配置RESTFUL  API"></a>如何使用spring4.x配置RESTFUL  API</h2><p>pom.xml<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line"><span class="tag">&lt;<span class="name">dependencies</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">dependency</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-webmvc<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">version</span>&gt;</span>4.3.2.RELEASE<span class="tag">&lt;/<span class="name">version</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></div><div class="line"></div><div class="line">    <span class="comment">&lt;!--</span></div><div class="line">        jackson 2的包在classpath时，spring会使用该包进行json转换，详见spring官方文档的</div><div class="line">        “Enabling the MVC Java Config or the MVC XML Namespace”</div><div class="line">     --&gt;</div><div class="line">    <span class="tag">&lt;<span class="name">dependency</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>com.fasterxml.jackson.core<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>jackson-databind<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">version</span>&gt;</span>2.8.3<span class="tag">&lt;/<span class="name">version</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">dependencies</span>&gt;</span></div></pre></td></tr></table></figure></p>
+<p>一个简单的<code>Controller</code><br><figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div></pre></td><td class="code"><pre><div class="line"><span class="meta">@RestController</span></div><div class="line"><span class="meta">@RequestMapping</span>(<span class="string">"/users"</span>)</div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">RestfulController</span> </span>&#123;</div><div class="line"></div><div class="line">    <span class="comment">/**</span></div><div class="line">     * 方式1</div><div class="line">     *</div><div class="line">     * <span class="doctag">@param</span> id</div><div class="line">     * <span class="doctag">@return</span> 返回一个ResponseEntity对象</div><div class="line">     */</div><div class="line">    <span class="meta">@RequestMapping</span>(value=<span class="string">"/type1/&#123;id&#125;"</span>, method = RequestMethod.GET)</div><div class="line">    <span class="function"><span class="keyword">public</span> ResponseEntity&lt;User&gt; <span class="title">getUserById1</span><span class="params">(@PathVariable <span class="keyword">int</span> id)</span> </span>&#123;</div><div class="line">        <span class="keyword">return</span> ResponseEntity.ok(<span class="keyword">new</span> User(id, <span class="string">"type1 user"</span>));</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="comment">/**</span></div><div class="line">     * 方式2</div><div class="line">     *</div><div class="line">     * <span class="doctag">@param</span> id</div><div class="line">     * <span class="doctag">@return</span> 返回一个POJO</div><div class="line">     */</div><div class="line">    <span class="meta">@RequestMapping</span>(value=<span class="string">"/type2/&#123;id&#125;"</span>, method = RequestMethod.GET)</div><div class="line">    <span class="function"><span class="keyword">public</span> User <span class="title">getUserById2</span><span class="params">(@PathVariable String id)</span> </span>&#123;</div><div class="line">        <span class="keyword">return</span> <span class="keyword">new</span> User(<span class="number">1</span>, <span class="string">"type2 user"</span>);</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>POJO对象<br><figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">User</span> </span>&#123;</div><div class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">int</span> id;</div><div class="line">    <span class="keyword">private</span> <span class="keyword">final</span> String name;</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="title">User</span><span class="params">(<span class="keyword">int</span> id, String name)</span> </span>&#123;</div><div class="line">        <span class="keyword">this</span>.id = id;</div><div class="line">        <span class="keyword">this</span>.name = name;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">getId</span><span class="params">()</span> </span>&#123;</div><div class="line">        <span class="keyword">return</span> id;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">getName</span><span class="params">()</span> </span>&#123;</div><div class="line">        <span class="keyword">return</span> name;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p><code>web.xml</code><br><figure class="highlight xml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div></pre></td><td class="code"><pre><div class="line">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</div><div class="line"><span class="tag">&lt;<span class="name">web-app</span> <span class="attr">xmlns</span>=<span class="string">"http://java.sun.com/xml/ns/javaee"</span></span></div><div class="line">         <span class="attr">xmlns:xsi</span>=<span class="string">"http://www.w3.org/2001/XMLSchema-instance"</span></div><div class="line">         <span class="attr">xsi:schemaLocation</span>=<span class="string">"http://java.sun.com/xml/ns/javaee</span></div><div class="line">                      http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"</div><div class="line">         <span class="attr">version</span>=<span class="string">"3.0"</span></div><div class="line">         <span class="attr">metadata-complete</span>=<span class="string">"true"</span>&gt;</div><div class="line"></div><div class="line">    <span class="tag">&lt;<span class="name">servlet</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">servlet-name</span>&gt;</span>springmvc<span class="tag">&lt;/<span class="name">servlet-name</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">servlet-class</span>&gt;</span>org.springframework.web.servlet.DispatcherServlet<span class="tag">&lt;/<span class="name">servlet-class</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">init-param</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">param-name</span>&gt;</span>contextConfigLocation<span class="tag">&lt;/<span class="name">param-name</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">param-value</span>&gt;</span>classpath:spring-mvc.xml<span class="tag">&lt;/<span class="name">param-value</span>&gt;</span></div><div class="line">        <span class="tag">&lt;/<span class="name">init-param</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">load-on-startup</span>&gt;</span>1<span class="tag">&lt;/<span class="name">load-on-startup</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">servlet</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">servlet-mapping</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">servlet-name</span>&gt;</span>springmvc<span class="tag">&lt;/<span class="name">servlet-name</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">url-pattern</span>&gt;</span>/*<span class="tag">&lt;/<span class="name">url-pattern</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">servlet-mapping</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">web-app</span>&gt;</span></div></pre></td></tr></table></figure></p>
+<p><code>spring-mvc.xml</code><br><figure class="highlight xml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div></pre></td><td class="code"><pre><div class="line">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</div><div class="line"><span class="tag">&lt;<span class="name">beans</span> <span class="attr">xmlns</span>=<span class="string">"http://www.springframework.org/schema/beans"</span></span></div><div class="line">       <span class="attr">xmlns:xsi</span>=<span class="string">"http://www.w3.org/2001/XMLSchema-instance"</span></div><div class="line">       <span class="attr">xmlns:context</span>=<span class="string">"http://www.springframework.org/schema/context"</span></div><div class="line">       <span class="attr">xmlns:mvc</span>=<span class="string">"http://www.springframework.org/schema/mvc"</span></div><div class="line">       <span class="attr">xsi:schemaLocation</span>=<span class="string">"</span></div><div class="line">        http://www.springframework.org/schema/beans</div><div class="line">        http://www.springframework.org/schema/beans/spring-beans.xsd</div><div class="line">        http://www.springframework.org/schema/context</div><div class="line">        http://www.springframework.org/schema/context/spring-context.xsd</div><div class="line">        http://www.springframework.org/schema/mvc</div><div class="line">        http://www.springframework.org/schema/mvc/spring-mvc.xsd"&gt;</div><div class="line"></div><div class="line">    <span class="tag">&lt;<span class="name">context:component-scan</span> <span class="attr">base-package</span>=<span class="string">"io.jasonlu.springrestful.controller"</span>/&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">mvc:annotation-driven</span>/&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">beans</span>&gt;</span></div></pre></td></tr></table></figure></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://louz.github.io/2016/09/30/spring-howto/" data-id="cixn1gs1a002xj8zozpyjq17q" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Spring/">Spring</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-test-coverage" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2016/09/29/test-coverage/" class="article-date">
+  <time datetime="2016-09-29T08:31:56.000Z" itemprop="datePublished">2016-09-29</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/开发/">开发</a>►<a class="article-category-link" href="/categories/开发/代码质量/">代码质量</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/09/29/test-coverage/">测试覆盖率配置</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>Java的测试覆盖率工具可以使用<code>Cobertura</code>、<code>Jacoco</code>，以下主要介绍Cobertura的配置</p>
+<h2 id="基础配置"><a href="#基础配置" class="headerlink" title="基础配置"></a>基础配置</h2><p><a href="http://www.mojohaus.org/cobertura-maven-plugin/" target="_blank" rel="external">cobertura-maven-plugin的主页</a></p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"><span class="tag">&lt;<span class="name">build</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">plugins</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">plugin</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.codehaus.mojo<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>cobertura-maven-plugin<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">version</span>&gt;</span>2.7<span class="tag">&lt;/<span class="name">version</span>&gt;</span></div><div class="line">        <span class="tag">&lt;/<span class="name">plugin</span>&gt;</span>  </div><div class="line">    <span class="tag">&lt;/<span class="name">plugins</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">build</span>&gt;</span></div></pre></td></tr></table></figure>
+<p>此时可以用<code>mvn cobertura:cobertura</code>命令产生测试覆盖率的报告，报告位置在<code>target\site\cobertura\</code>目录</p>
+<h2 id="在构建过程中校验"><a href="#在构建过程中校验" class="headerlink" title="在构建过程中校验"></a>在构建过程中校验</h2><p>如果需要设置满足测试覆盖率达到某个阈值才能构建成功的话，需要做以下配置<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div></pre></td><td class="code"><pre><div class="line"><span class="tag">&lt;<span class="name">build</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">plugins</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">plugin</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.codehaus.mojo<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>cobertura-maven-plugin<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">version</span>&gt;</span>2.7<span class="tag">&lt;/<span class="name">version</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">configuration</span>&gt;</span></div><div class="line">                <span class="tag">&lt;<span class="name">check</span>&gt;</span>     <span class="comment">&lt;!-- required --&gt;</span></div><div class="line">                    <span class="tag">&lt;<span class="name">branchRate</span>&gt;</span>85<span class="tag">&lt;/<span class="name">branchRate</span>&gt;</span>  <span class="comment">&lt;!-- optional --&gt;</span></div><div class="line">                    <span class="tag">&lt;<span class="name">lineRate</span>&gt;</span>85<span class="tag">&lt;/<span class="name">lineRate</span>&gt;</span>      <span class="comment">&lt;!-- optional --&gt;</span></div><div class="line">                    <span class="tag">&lt;<span class="name">haltOnFailure</span>&gt;</span>true<span class="tag">&lt;/<span class="name">haltOnFailure</span>&gt;</span>  <span class="comment">&lt;!-- must be true,default is false --&gt;</span></div><div class="line">                    <span class="tag">&lt;<span class="name">totalBranchRate</span>&gt;</span>85<span class="tag">&lt;/<span class="name">totalBranchRate</span>&gt;</span>   <span class="comment">&lt;!-- optional --&gt;</span></div><div class="line">                    <span class="tag">&lt;<span class="name">totalLineRate</span>&gt;</span>85<span class="tag">&lt;/<span class="name">totalLineRate</span>&gt;</span>       <span class="comment">&lt;!-- optional --&gt;</span></div><div class="line">                    <span class="tag">&lt;<span class="name">packageLineRate</span>&gt;</span>85<span class="tag">&lt;/<span class="name">packageLineRate</span>&gt;</span>   <span class="comment">&lt;!-- optional --&gt;</span></div><div class="line">                    <span class="tag">&lt;<span class="name">packageBranchRate</span>&gt;</span>85<span class="tag">&lt;/<span class="name">packageBranchRate</span>&gt;</span><span class="comment">&lt;!-- optional --&gt;</span></div><div class="line">                    <span class="tag">&lt;<span class="name">regexes</span>&gt;</span></div><div class="line">                        <span class="tag">&lt;<span class="name">regex</span>&gt;</span> <span class="comment">&lt;!-- 可针对某种匹配模式进行特殊设置 --&gt;</span></div><div class="line">                            <span class="tag">&lt;<span class="name">pattern</span>&gt;</span>io.jasonlu.springrestful.*<span class="tag">&lt;/<span class="name">pattern</span>&gt;</span></div><div class="line">                            <span class="tag">&lt;<span class="name">branchRate</span>&gt;</span>90<span class="tag">&lt;/<span class="name">branchRate</span>&gt;</span> <span class="comment">&lt;!-- optional --&gt;</span></div><div class="line">                            <span class="tag">&lt;<span class="name">lineRate</span>&gt;</span>80<span class="tag">&lt;/<span class="name">lineRate</span>&gt;</span>     <span class="comment">&lt;!-- required --&gt;</span></div><div class="line">                        <span class="tag">&lt;/<span class="name">regex</span>&gt;</span></div><div class="line">                    <span class="tag">&lt;/<span class="name">regexes</span>&gt;</span></div><div class="line">                <span class="tag">&lt;/<span class="name">check</span>&gt;</span></div><div class="line">            <span class="tag">&lt;/<span class="name">configuration</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">executions</span>&gt;</span></div><div class="line">                <span class="tag">&lt;<span class="name">execution</span>&gt;</span></div><div class="line">                    <span class="tag">&lt;<span class="name">phase</span>&gt;</span>prepare-package<span class="tag">&lt;/<span class="name">phase</span>&gt;</span>  <span class="comment">&lt;!-- default is verify --&gt;</span></div><div class="line">                    <span class="tag">&lt;<span class="name">goals</span>&gt;</span></div><div class="line">                        <span class="tag">&lt;<span class="name">goal</span>&gt;</span>clean<span class="tag">&lt;/<span class="name">goal</span>&gt;</span></div><div class="line">                        <span class="tag">&lt;<span class="name">goal</span>&gt;</span>check<span class="tag">&lt;/<span class="name">goal</span>&gt;</span></div><div class="line">                    <span class="tag">&lt;/<span class="name">goals</span>&gt;</span></div><div class="line">                <span class="tag">&lt;/<span class="name">execution</span>&gt;</span></div><div class="line">            <span class="tag">&lt;/<span class="name">executions</span>&gt;</span></div><div class="line">        <span class="tag">&lt;/<span class="name">plugin</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">plugins</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">build</span>&gt;</span></div></pre></td></tr></table></figure></p>
+<p>执行<code>mvn package</code>时就会进行测试覆盖率的校验</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://louz.github.io/2016/09/29/test-coverage/" data-id="cixn1gs1j0038j8zoygx8cfzr" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Maven/">Maven</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/代码质量/">代码质量</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/测试覆盖率/">测试覆盖率</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-kafka-howto" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2016/09/08/kafka-howto/" class="article-date">
+  <time datetime="2016-09-08T01:12:16.000Z" itemprop="datePublished">2016-09-08</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/开发/">开发</a>►<a class="article-category-link" href="/categories/开发/Kafka/">Kafka</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/09/08/kafka-howto/">Kafka常见问题</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="一、自定义Kafka开发镜像"><a href="#一、自定义Kafka开发镜像" class="headerlink" title="一、自定义Kafka开发镜像"></a>一、自定义Kafka开发镜像</h2><h3 id="目的"><a href="#目的" class="headerlink" title="目的"></a>目的</h3><ol>
+<li>能快速启动</li>
+<li>包含必要的功能</li>
+</ol>
+<h3 id="Dockerfile"><a href="#Dockerfile" class="headerlink" title="Dockerfile"></a>Dockerfile</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">FROM java:8-jre</div><div class="line">MAINTAINER Louz</div><div class="line"></div><div class="line">RUN curl -s http://apache.fayea.com/kafka/0.10.0.1/kafka_2.11-0.10.0.1.tgz | tar -xz -C /usr/local/</div><div class="line">RUN cd /usr/local &amp;&amp; ln -s kafka_2.11-0.10.0.1 kafka </div><div class="line"></div><div class="line">WORKDIR /usr/local/kafka</div><div class="line">CMD bin/zookeeper-server-start.sh config/zookeeper.properties &amp;\</div><div class="line">       bin/kafka-server-start.sh config/server.properties</div></pre></td></tr></table></figure>
+<p>执行构建命令<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">docker build -f dockerfile -t louz/kafka0100 .</div></pre></td></tr></table></figure></p>
+<h3 id="启动容器"><a href="#启动容器" class="headerlink" title="启动容器"></a>启动容器</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"># 将容器名指定为kafka，容器的hostname指定为kafka（方便后续程序访问）</div><div class="line">docker run -d --name kafka -h kafka -p 9092:9092 louz/kafka0100</div></pre></td></tr></table></figure>
+<h2 id="二、访问kakfa"><a href="#二、访问kakfa" class="headerlink" title="二、访问kakfa"></a>二、访问kakfa</h2><h3 id="创建topic"><a href="#创建topic" class="headerlink" title="创建topic"></a>创建topic</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">docker exec kafka bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 1 --partitions 1 --topic test</div></pre></td></tr></table></figure>
+<h3 id="启动consumer"><a href="#启动consumer" class="headerlink" title="启动consumer"></a>启动consumer</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">docker exec kafka bin/kafka-console-consumer.sh --zookeeper localhost:2181 --topic test --from-beginning</div></pre></td></tr></table></figure>
+<h3 id="启动producer发送消息"><a href="#启动producer发送消息" class="headerlink" title="启动producer发送消息"></a>启动producer发送消息</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ProducerDemo</span> </span>&#123;</div><div class="line">    <span class="keyword">private</span> <span class="keyword">static</span> KafkaProducer&lt;String, String&gt; procuder;</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</div><div class="line">        Producer&lt;String, String&gt; producer = getKafkaProducer();</div><div class="line">        String topic = <span class="string">"test"</span>;</div><div class="line">        <span class="keyword">for</span>(<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">100</span>; i++) &#123;</div><div class="line">            ProducerRecord&lt;String, String&gt; record = <span class="keyword">new</span> ProducerRecord&lt;&gt;(topic, <span class="string">"NO."</span> + Integer.toString(i));</div><div class="line">            producer.send(record);</div><div class="line">        &#125;</div><div class="line"></div><div class="line">        producer.close();</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> Producer&lt;String, String&gt; <span class="title">getKafkaProducer</span><span class="params">()</span> </span>&#123;</div><div class="line">        <span class="keyword">if</span> (procuder == <span class="keyword">null</span>) &#123;</div><div class="line">            Properties props = <span class="keyword">new</span> Properties();</div><div class="line">            <span class="comment">// 此处的hostname对应docker run中的-h参数，并且需要在hosts文件中做好ip映射</span></div><div class="line">            props.put(<span class="string">"bootstrap.servers"</span>, <span class="string">"kafka:9092"</span>);</div><div class="line">            props.put(<span class="string">"acks"</span>, <span class="string">"all"</span>);</div><div class="line">            props.put(<span class="string">"retries"</span>, <span class="number">0</span>);</div><div class="line">            props.put(<span class="string">"batch.size"</span>, <span class="number">16384</span>);</div><div class="line">            props.put(<span class="string">"linger.ms"</span>, <span class="number">1</span>);</div><div class="line">            props.put(<span class="string">"buffer.memory"</span>, <span class="number">33554432</span>);</div><div class="line">            props.put(<span class="string">"key.serializer"</span>, <span class="string">"org.apache.kafka.common.serialization.StringSerializer"</span>);</div><div class="line">            props.put(<span class="string">"value.serializer"</span>, <span class="string">"org.apache.kafka.common.serialization.StringSerializer"</span>);</div><div class="line"></div><div class="line">            procuder = <span class="keyword">new</span> KafkaProducer&lt;&gt;(props);</div><div class="line">        &#125;</div><div class="line"></div><div class="line">        <span class="keyword">return</span> procuder;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>可以在<code>consumer</code>的控制台看到类似输出：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">$ docker exec -it kafka bin/kafka-console-consumer.sh --zookeeper localhost:2181 --topic test --from-beginning</div><div class="line">NOOO.0</div><div class="line">NOOO.1</div><div class="line">NOOO.2</div><div class="line">NOOO.3</div><div class="line">NOOO.4</div><div class="line">......</div></pre></td></tr></table></figure></p>
+<h2 id="三、关于consumer"><a href="#三、关于consumer" class="headerlink" title="三、关于consumer"></a>三、关于consumer</h2><p><a href="http://raising.iteye.com/blog/2252456" target="_blank" rel="external">参考文档：【原创】探讨kafka的分区数与多线程消费</a><br>Kafka中，每个partition在一个consumer group中最多只有一个consumer线程能消费</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://louz.github.io/2016/09/08/kafka-howto/" data-id="cixn1gs0i0020j8zo3iy43z1r" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/docker/">docker</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/kafka/">kafka</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-code-quality" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2016/09/05/code-quality/" class="article-date">
+  <time datetime="2016-09-05T08:14:59.000Z" itemprop="datePublished">2016-09-05</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/开发/">开发</a>►<a class="article-category-link" href="/categories/开发/代码质量/">代码质量</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/09/05/code-quality/">代码质量</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="1-在构建时加入checkstyle校验"><a href="#1-在构建时加入checkstyle校验" class="headerlink" title="1. 在构建时加入checkstyle校验"></a>1. 在构建时加入<code>checkstyle</code>校验</h2><h3 id="目的"><a href="#目的" class="headerlink" title="目的"></a>目的</h3><p>希望规范团队的代码风格，但又不希望对目前的代码冲击太大，影响代码的正常构建</p>
+<h3 id="checkstyle简介"><a href="#checkstyle简介" class="headerlink" title="checkstyle简介"></a>checkstyle简介</h3><p><code>checkstyle</code>主要用于检验<code>java</code>的代码风格，官方支持的有<a href="http://checkstyle.sourceforge.net/sun_style.html" target="_blank" rel="external">sun_checks.xml</a>和<a href="http://checkstyle.sourceforge.net/google_style.html" target="_blank" rel="external">google_checks.xml</a></p>
+<h3 id="maven配置"><a href="#maven配置" class="headerlink" title="maven配置"></a>maven配置</h3><p>官方网站：<a href="http://maven.apache.org/plugins/maven-checkstyle-plugin/" target="_blank" rel="external">http://maven.apache.org/plugins/maven-checkstyle-plugin/</a>，为解决我们的目的，可以使用以下配置：<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div></pre></td><td class="code"><pre><div class="line"><span class="tag">&lt;<span class="name">build</span>&gt;</span></div><div class="line">    <span class="tag">&lt;<span class="name">plugins</span>&gt;</span></div><div class="line">      <span class="tag">&lt;<span class="name">plugin</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.apache.maven.plugins<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>maven-checkstyle-plugin<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">version</span>&gt;</span>2.17<span class="tag">&lt;/<span class="name">version</span>&gt;</span></div><div class="line">        <span class="tag">&lt;<span class="name">executions</span>&gt;</span></div><div class="line">            <span class="tag">&lt;<span class="name">execution</span>&gt;</span></div><div class="line">                <span class="tag">&lt;<span class="name">id</span>&gt;</span>validate<span class="tag">&lt;/<span class="name">id</span>&gt;</span></div><div class="line">                <span class="tag">&lt;<span class="name">phase</span>&gt;</span>validate<span class="tag">&lt;/<span class="name">phase</span>&gt;</span></div><div class="line">                <span class="tag">&lt;<span class="name">configuration</span>&gt;</span></div><div class="line">                    <span class="tag">&lt;<span class="name">configLocation</span>&gt;</span>my_checkstyle.xml<span class="tag">&lt;/<span class="name">configLocation</span>&gt;</span></div><div class="line">                    <span class="tag">&lt;<span class="name">includeTestSourceDirectory</span>&gt;</span>true<span class="tag">&lt;/<span class="name">includeTestSourceDirectory</span>&gt;</span></div><div class="line"></div><div class="line">                    <span class="comment">&lt;!-- 以下两项配置表示当超过10000个警告时构建失败 --&gt;</span></div><div class="line">                    <span class="tag">&lt;<span class="name">failOnViolation</span>&gt;</span>true<span class="tag">&lt;/<span class="name">failOnViolation</span>&gt;</span></div><div class="line">                    <span class="tag">&lt;<span class="name">maxAllowedViolations</span>&gt;</span>10000<span class="tag">&lt;/<span class="name">maxAllowedViolations</span>&gt;</span></div><div class="line">                <span class="tag">&lt;/<span class="name">configuration</span>&gt;</span></div><div class="line">                <span class="tag">&lt;<span class="name">goals</span>&gt;</span></div><div class="line">                    <span class="tag">&lt;<span class="name">goal</span>&gt;</span>check<span class="tag">&lt;/<span class="name">goal</span>&gt;</span></div><div class="line">                <span class="tag">&lt;/<span class="name">goals</span>&gt;</span></div><div class="line">            <span class="tag">&lt;/<span class="name">execution</span>&gt;</span></div><div class="line">        <span class="tag">&lt;/<span class="name">executions</span>&gt;</span></div><div class="line">      <span class="tag">&lt;/<span class="name">plugin</span>&gt;</span></div><div class="line">    <span class="tag">&lt;/<span class="name">plugins</span>&gt;</span></div><div class="line"><span class="tag">&lt;/<span class="name">build</span>&gt;</span></div></pre></td></tr></table></figure></p>
+<p><code>my_checkstyle.xml</code>的内容可以参考<a href="https://github.com/checkstyle/checkstyle/blob/master/src/main/resources/google_checks.xml" target="_blank" rel="external">google的风格</a>，自行删减。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://louz.github.io/2016/09/05/code-quality/" data-id="cixn1gryh000fj8zo84mdz1o3" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/PMD/">PMD</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/checkstyle/">checkstyle</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/maven/">maven</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-sublime-tips" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2016/08/30/sublime-tips/" class="article-date">
+  <time datetime="2016-08-30T07:53:16.000Z" itemprop="datePublished">2016-08-30</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/应用/">应用</a>►<a class="article-category-link" href="/categories/应用/Sublime/">Sublime</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/08/30/sublime-tips/">Sublime Text使用技巧</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p><strong><code>列模式</code></strong>：shift+鼠标右键 / 鼠标中键</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://louz.github.io/2016/08/30/sublime-tips/" data-id="cixn1gs1o003fj8zo47pv76aw" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Sublime/">Sublime</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-hello-world" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2016/08/30/hello-world/" class="article-date">
+  <time datetime="2016-08-30T07:02:03.000Z" itemprop="datePublished">2016-08-30</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/08/30/hello-world/">Hello World</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>Welcome to <a href="https://hexo.io/" target="_blank" rel="external">Hexo</a>! This is your very first post. Check <a href="https://hexo.io/docs/" target="_blank" rel="external">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="https://hexo.io/docs/troubleshooting.html" target="_blank" rel="external">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues" target="_blank" rel="external">GitHub</a>.</p>
+<h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ hexo new <span class="string">"My New Post"</span></div></pre></td></tr></table></figure>
+<p>More info: <a href="https://hexo.io/docs/writing.html" target="_blank" rel="external">Writing</a></p>
+<h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ hexo server</div></pre></td></tr></table></figure>
+<p>More info: <a href="https://hexo.io/docs/server.html" target="_blank" rel="external">Server</a></p>
+<h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ hexo generate</div></pre></td></tr></table></figure>
+<p>More info: <a href="https://hexo.io/docs/generating.html" target="_blank" rel="external">Generating</a></p>
+<h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ hexo deploy</div></pre></td></tr></table></figure>
+<p>More info: <a href="https://hexo.io/docs/deployment.html" target="_blank" rel="external">Deployment</a></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://louz.github.io/2016/08/30/hello-world/" data-id="cixn1grzn0019j8zoyhy6d1bt" class="article-share-link">Share</a>
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-docker-redis-cluster" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2016/08/11/docker-redis-cluster/" class="article-date">
+  <time datetime="2016-08-11T09:14:58.000Z" itemprop="datePublished">2016-08-11</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/开发/">开发</a>►<a class="article-category-link" href="/categories/开发/docker/">docker</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/08/11/docker-redis-cluster/">利用docker搭建redis集群</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>参考文档：<a href="http://redis.io/topics/cluster-tutorial" target="_blank" rel="external">http://redis.io/topics/cluster-tutorial</a></p>
+<p>##！搭建后的redis集群只能通过redis-cli连接使用，暂时不能对外提供访问（主要是由于redis本身的机制导致，官方文档说要将容器指定为–network=host方式）</p>
+<h2 id="1-先下载redis镜像"><a href="#1-先下载redis镜像" class="headerlink" title="1. 先下载redis镜像"></a>1. 先下载redis镜像</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">docker pull redis:3.0.7</div></pre></td></tr></table></figure>
+<h2 id="2-构建一个支持集群化的镜像"><a href="#2-构建一个支持集群化的镜像" class="headerlink" title="2. 构建一个支持集群化的镜像"></a>2. 构建一个支持集群化的镜像</h2><p><code>dockerfile</code>如下<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line">FROM redis:3.0.7</div><div class="line">MAINTAINER Louz</div><div class="line"></div><div class="line">ENV REDIS_HOME /usr/local</div><div class="line"></div><div class="line">RUN mkdir $REDIS_HOME/conf</div><div class="line">WORKDIR $REDIS_HOME/conf</div><div class="line"></div><div class="line">## 创建一个redis.conf文件，打开集群相关配置</div><div class="line">RUN echo &quot;cluster-enabled yes&quot; &gt; redis.conf</div><div class="line">RUN echo &quot;cluster-config-file nodes_6379.conf&quot; &gt;&gt; redis.conf</div><div class="line"></div><div class="line">## 初始化容器时启动redis实例</div><div class="line">CMD [&quot;redis-server&quot;,&quot;/usr/local/conf/redis.conf&quot;]</div></pre></td></tr></table></figure></p>
+<p>通过以下命令构建出镜像<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">docker build -f Dockerfile -t louz/redis-cluster .</div></pre></td></tr></table></figure></p>
+<h2 id="3-启动6个节点（3主3备）"><a href="#3-启动6个节点（3主3备）" class="headerlink" title="3. 启动6个节点（3主3备）"></a>3. 启动6个节点（3主3备）</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">docker run -d --name redis-node1 -p 6379:6379 louz/redis-cluster  #映射6379端口，以便外部应用访问</div><div class="line">docker run -d --name redis-node2 louz/redis-cluster</div><div class="line">docker run -d --name redis-node3 louz/redis-cluster</div><div class="line">docker run -d --name redis-node4 louz/redis-cluster</div><div class="line">docker run -d --name redis-node5 louz/redis-cluster</div><div class="line">docker run -d --name redis-node6 louz/redis-cluster</div></pre></td></tr></table></figure>
+<p>这样就启动了6个独立的redis实例，但现在还没有形成集群。可以启动一个<code>redis-cli</code>测试各个节点是否启动成功<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ docker run -it --link redis-node1:redis-node1 --rm redis:3.0.7 redis-cli -h redis-node1 -p 6379</div></pre></td></tr></table></figure></p>
+<h2 id="4-获取各个redis实例的ip"><a href="#4-获取各个redis实例的ip" class="headerlink" title="4. 获取各个redis实例的ip"></a>4. 获取各个redis实例的ip</h2><p>貌似redis建立集群必须要使用ip，所以先使用以下命令：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">docker inspect --format=&apos;&#123;&#123;.NetworkSettings.IPAddress&#125;&#125;&apos; redis-node1</div><div class="line">......</div><div class="line">docker inspect --format=&apos;&#123;&#123;.NetworkSettings.IPAddress&#125;&#125;&apos; redis-node6</div></pre></td></tr></table></figure></p>
+<p>分别获取到6个redis实例的ip，下面假设拿到的是172.17.0.3-8</p>
+<h2 id="5-构建一个用于创建redis集群命令的镜像"><a href="#5-构建一个用于创建redis集群命令的镜像" class="headerlink" title="5. 构建一个用于创建redis集群命令的镜像"></a>5. 构建一个用于创建redis集群命令的镜像</h2><p><code>dockerfile</code>如下，镜像名为<code>louz/ruby22-redis307</code></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">FROM ruby:2.2.5</div><div class="line">MAINTAINER Louz</div><div class="line"></div><div class="line">RUN gem install redis</div><div class="line">RUN curl -s http://download.redis.io/releases/redis-3.0.7.tar.gz | tar -xz -C /usr/local</div><div class="line">RUN cd /usr/local &amp;&amp; ln -s redis-3.0.7 redis</div></pre></td></tr></table></figure>
+<h2 id="6-创建集群"><a href="#6-创建集群" class="headerlink" title="6. 创建集群"></a>6. 创建集群</h2><p>步骤5的镜像构建成功后，执行以下命令进入容器的交互式界面<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">docker run -it louz/ruby22-redis307 /bin/bash</div></pre></td></tr></table></figure></p>
+<p>然后在容器内部，执行以下命令：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">$&gt;  /usr/local/redis/src/redis-trib.rb create --replicas 1 \</div><div class="line">172.17.0.3:6379 172.17.0.4:6379 172.17.0.5:6379 \</div><div class="line">172.17.0.6:6379 172.17.0.7:6379 172.17.0.8:6379</div></pre></td></tr></table></figure></p>
+<p>上面的<code>--replicas 1</code>表示每个<code>master节点有1个slave</code>。</p>
+<p>命令运行后出现类似的对话框：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div></pre></td><td class="code"><pre><div class="line">$ docker run -it louz/ruby22-redis307 /bin/bash</div><div class="line">root@0f1df01b4965:/# /usr/local/redis/src/redis-trib.rb create --replicas 1 \</div><div class="line">&gt; 172.17.0.3:6379 172.17.0.4:6379 172.17.0.5:6379 \</div><div class="line">&gt; 172.17.0.6:6379 172.17.0.7:6379 172.17.0.8:6379</div><div class="line">&gt;&gt;&gt; Creating cluster</div><div class="line">&gt;&gt;&gt; Performing hash slots allocation on 6 nodes...</div><div class="line">Using 3 masters:</div><div class="line">172.17.0.3:6379</div><div class="line">172.17.0.4:6379</div><div class="line">172.17.0.5:6379</div><div class="line">Adding replica 172.17.0.6:6379 to 172.17.0.3:6379</div><div class="line">Adding replica 172.17.0.7:6379 to 172.17.0.4:6379</div><div class="line">Adding replica 172.17.0.8:6379 to 172.17.0.5:6379</div><div class="line">M: 716c75b9df60ff6270271a62d2349fa2e6a84a48 172.17.0.3:6379</div><div class="line">   slots:0-5460 (5461 slots) master</div><div class="line">M: 2795b8bb1e62ceeda936499e13c90010c4c9b5c7 172.17.0.4:6379</div><div class="line">   slots:5461-10922 (5462 slots) master</div><div class="line">M: 0160d543fefc9a633c77d7bc7de7eb868a7706b8 172.17.0.5:6379</div><div class="line">   slots:10923-16383 (5461 slots) master</div><div class="line">S: 78e6dafb4c4e08f41a4ef740047728b23ca730b3 172.17.0.6:6379</div><div class="line">   replicates 716c75b9df60ff6270271a62d2349fa2e6a84a48</div><div class="line">S: 78e6dafb4c4e08f41a4ef740047728b23ca730b3 172.17.0.7:6379</div><div class="line">   replicates 0160d543fefc9a633c77d7bc7de7eb868a7706b8</div><div class="line">S: 283474770750c161e2f22f56d7c3cac0d92c9bc1 172.17.0.8:6379</div><div class="line">   replicates 2795b8bb1e62ceeda936499e13c90010c4c9b5c7</div><div class="line">Can I set the above configuration? (type &apos;yes&apos; to accept):</div></pre></td></tr></table></figure></p>
+<p>回答<code>yes</code>后，出现类似信息即表示集群创建成功<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div></pre></td><td class="code"><pre><div class="line">Can I set the above configuration? (type &apos;yes&apos; to accept): yes</div><div class="line">&gt;&gt;&gt; Nodes configuration updated</div><div class="line">&gt;&gt;&gt; Assign a different config epoch to each node</div><div class="line">&gt;&gt;&gt; Sending CLUSTER MEET messages to join the cluster</div><div class="line">Waiting for the cluster to join..</div><div class="line">&gt;&gt;&gt; Performing Cluster Check (using node 172.17.0.3:6379)</div><div class="line">M: 716c75b9df60ff6270271a62d2349fa2e6a84a48 172.17.0.3:6379</div><div class="line">   slots:0-5460 (5461 slots) master</div><div class="line">M: 2795b8bb1e62ceeda936499e13c90010c4c9b5c7 172.17.0.4:6379</div><div class="line">   slots:5461-10922 (5462 slots) master</div><div class="line">M: 0160d543fefc9a633c77d7bc7de7eb868a7706b8 172.17.0.5:6379</div><div class="line">   slots:10923-16383 (5461 slots) master</div><div class="line">M: 78e6dafb4c4e08f41a4ef740047728b23ca730b3 172.17.0.6:6379</div><div class="line">   slots: (0 slots) master</div><div class="line">   replicates 716c75b9df60ff6270271a62d2349fa2e6a84a48</div><div class="line">M: 78e6dafb4c4e08f41a4ef740047728b23ca730b3 172.17.0.7:6379</div><div class="line">   slots: (0 slots) master</div><div class="line">   replicates 0160d543fefc9a633c77d7bc7de7eb868a7706b8</div><div class="line">M: 283474770750c161e2f22f56d7c3cac0d92c9bc1 172.17.0.8:6379</div><div class="line">   slots: (0 slots) master</div><div class="line">   replicates 2795b8bb1e62ceeda936499e13c90010c4c9b5c7</div><div class="line">[OK] All nodes agree about slots configuration.</div><div class="line">&gt;&gt;&gt; Check for open slots...</div><div class="line">&gt;&gt;&gt; Check slots coverage...</div><div class="line">[OK] All 16384 slots covered.</div></pre></td></tr></table></figure></p>
+<h2 id="7-验证"><a href="#7-验证" class="headerlink" title="7. 验证"></a>7. 验证</h2><p>启动一个<code>redis-cli</code>连接其中一个节点<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ docker run -it --link redis-node1:redis-node1 --rm redis:3.0.7 redis-cli -h redis-node1 -p 6379 -c</div></pre></td></tr></table></figure></p>
+<p>输入<code>cluster info</code>显示类似信息<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line">$ docker run -it --link redis-node1:redis-node1 --rm redis:3.0.7 redis-cli -h redis-node1 -p 6379 -c</div><div class="line">redis-node1:6379&gt; cluster info</div><div class="line">cluster_state:ok               &lt;-- 表示集群已经可用</div><div class="line">cluster_slots_assigned:16384</div><div class="line">cluster_slots_ok:16384</div><div class="line">cluster_slots_pfail:0</div><div class="line">cluster_slots_fail:0</div><div class="line">cluster_known_nodes:6</div><div class="line">cluster_size:3</div><div class="line">cluster_current_epoch:6</div><div class="line">cluster_my_epoch:1</div><div class="line">cluster_stats_messages_sent:162</div><div class="line">cluster_stats_messages_received:162</div><div class="line">redis-node1:6379&gt;</div></pre></td></tr></table></figure></p>
+<p>测试一下：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">redis-node1:6379&gt; get key</div><div class="line">-&gt; Redirected to slot [12539] located at 172.17.0.5:6379</div><div class="line">(nil)</div><div class="line">172.17.0.5:6379&gt; set key1 hello</div><div class="line">-&gt; Redirected to slot [9189] located at 172.17.0.4:6379</div><div class="line">OK</div><div class="line">172.17.0.4:6379&gt; get key1</div><div class="line">&quot;hello&quot;</div><div class="line">172.17.0.4:6379&gt;</div></pre></td></tr></table></figure></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://louz.github.io/2016/08/11/docker-redis-cluster/" data-id="cixn1gryx000qj8zolx0hjk3p" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/docker/">docker</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/redis/">redis</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+
+
+  <nav id="page-nav">
+    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><span class="space">&hellip;</span><a class="page-number" href="/page/5/">5</a><a class="extend next" rel="next" href="/page/2/">__('next') &raquo;</a>
+  </nav>
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/Flume/">Flume</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/HBase/">HBase</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/Hadoop/">Hadoop</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/Hexo/">Hexo</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/IE/">IE</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/JBoss/">JBoss</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/Java/">Java</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/Linux/">Linux</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/MS-Word/">MS Word</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/MySQL/">MySQL</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/QuickBuild/">QuickBuild</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/R/">R</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/Sqoop/">Sqoop</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/Zookeeper/">Zookeeper</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/ant/">ant</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/应用/">应用</a><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/应用/Markdown/">Markdown</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/应用/Sublime/">Sublime</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/应用/Windows/">Windows</a></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/">开发</a><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/开发/AWS/">AWS</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/BDD/">BDD</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/Hadoop/">Hadoop</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/JDK/">JDK</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/JVM/">JVM</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/Java/">Java</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/Kafka/">Kafka</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/Maven/">Maven</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/RESTFUL/">RESTFUL</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/Spring/">Spring</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/Tomcat/">Tomcat</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/docker/">docker</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/http/">http</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/代码质量/">代码质量</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/单元测试/">单元测试</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/数据库/">数据库</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/开发/设计模式/">设计模式</a></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/杂谈/">杂谈</a><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/杂谈/移动工作站/">移动工作站</a></li></ul></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/AWS/">AWS</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CentOS/">CentOS</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Cucumber/">Cucumber</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/DB2/">DB2</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Design-Pattern/">Design Pattern</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Flume/">Flume</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/HBase-API/">HBase API</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/HBase-Shell/">HBase Shell</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/HBase配置/">HBase配置</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/HDFS/">HDFS</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Hadoop/">Hadoop</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Hexo/">Hexo</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/IE/">IE</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/JBoss/">JBoss</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/JDK/">JDK</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/JNDI/">JNDI</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/JVM/">JVM</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Java/">Java</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux/">Linux</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux-Shell/">Linux Shell</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Markdown/">Markdown</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Maven/">Maven</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/MySQL/">MySQL</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/PMD/">PMD</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/QuickBuild/">QuickBuild</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/R/">R</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Restful/">Restful</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Scala/">Scala</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Spark/">Spark</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Spring/">Spring</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Sqoop/">Sqoop</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Sublime/">Sublime</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/WTG/">WTG</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Zookeeper/">Zookeeper</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ant/">ant</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/checkstyle/">checkstyle</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/docker/">docker</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/dockerfile/">dockerfile</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hexo/">hexo</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/http/">http</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/jersey/">jersey</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/kafka/">kafka</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/maven/">maven</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/redis/">redis</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/spark/">spark</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/tomcat/">tomcat</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/word技巧/">word技巧</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/中文/">中文</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/代码质量/">代码质量</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/单元测试/">单元测试</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/同步/">同步</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/大数据/">大数据</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/并发编程/">并发编程</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/正则表达式/">正则表达式</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/测试覆盖率/">测试覆盖率</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/设计模式/">设计模式</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/AWS/" style="font-size: 10px;">AWS</a> <a href="/tags/CentOS/" style="font-size: 10px;">CentOS</a> <a href="/tags/Cucumber/" style="font-size: 10px;">Cucumber</a> <a href="/tags/DB2/" style="font-size: 10px;">DB2</a> <a href="/tags/Design-Pattern/" style="font-size: 10px;">Design Pattern</a> <a href="/tags/Flume/" style="font-size: 10px;">Flume</a> <a href="/tags/HBase-API/" style="font-size: 10px;">HBase API</a> <a href="/tags/HBase-Shell/" style="font-size: 10px;">HBase Shell</a> <a href="/tags/HBase配置/" style="font-size: 10px;">HBase配置</a> <a href="/tags/HDFS/" style="font-size: 10px;">HDFS</a> <a href="/tags/Hadoop/" style="font-size: 13.33px;">Hadoop</a> <a href="/tags/Hexo/" style="font-size: 10px;">Hexo</a> <a href="/tags/IE/" style="font-size: 10px;">IE</a> <a href="/tags/JBoss/" style="font-size: 10px;">JBoss</a> <a href="/tags/JDK/" style="font-size: 10px;">JDK</a> <a href="/tags/JNDI/" style="font-size: 10px;">JNDI</a> <a href="/tags/JVM/" style="font-size: 10px;">JVM</a> <a href="/tags/Java/" style="font-size: 10px;">Java</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/Linux-Shell/" style="font-size: 10px;">Linux Shell</a> <a href="/tags/Markdown/" style="font-size: 10px;">Markdown</a> <a href="/tags/Maven/" style="font-size: 13.33px;">Maven</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/PMD/" style="font-size: 10px;">PMD</a> <a href="/tags/QuickBuild/" style="font-size: 10px;">QuickBuild</a> <a href="/tags/R/" style="font-size: 10px;">R</a> <a href="/tags/Restful/" style="font-size: 10px;">Restful</a> <a href="/tags/Scala/" style="font-size: 10px;">Scala</a> <a href="/tags/Spark/" style="font-size: 10px;">Spark</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/Sqoop/" style="font-size: 10px;">Sqoop</a> <a href="/tags/Sublime/" style="font-size: 10px;">Sublime</a> <a href="/tags/WTG/" style="font-size: 10px;">WTG</a> <a href="/tags/Zookeeper/" style="font-size: 13.33px;">Zookeeper</a> <a href="/tags/ant/" style="font-size: 10px;">ant</a> <a href="/tags/checkstyle/" style="font-size: 10px;">checkstyle</a> <a href="/tags/docker/" style="font-size: 16.67px;">docker</a> <a href="/tags/dockerfile/" style="font-size: 10px;">dockerfile</a> <a href="/tags/hexo/" style="font-size: 10px;">hexo</a> <a href="/tags/http/" style="font-size: 10px;">http</a> <a href="/tags/jersey/" style="font-size: 10px;">jersey</a> <a href="/tags/kafka/" style="font-size: 10px;">kafka</a> <a href="/tags/maven/" style="font-size: 10px;">maven</a> <a href="/tags/redis/" style="font-size: 10px;">redis</a> <a href="/tags/spark/" style="font-size: 10px;">spark</a> <a href="/tags/tomcat/" style="font-size: 10px;">tomcat</a> <a href="/tags/word技巧/" style="font-size: 10px;">word技巧</a> <a href="/tags/中文/" style="font-size: 10px;">中文</a> <a href="/tags/代码质量/" style="font-size: 10px;">代码质量</a> <a href="/tags/单元测试/" style="font-size: 10px;">单元测试</a> <a href="/tags/同步/" style="font-size: 10px;">同步</a> <a href="/tags/大数据/" style="font-size: 20px;">大数据</a> <a href="/tags/并发编程/" style="font-size: 10px;">并发编程</a> <a href="/tags/正则表达式/" style="font-size: 10px;">正则表达式</a> <a href="/tags/测试覆盖率/" style="font-size: 10px;">测试覆盖率</a> <a href="/tags/设计模式/" style="font-size: 10px;">设计模式</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/10/">October 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/09/">September 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/08/">August 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/07/">July 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/06/">June 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/04/">April 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/01/">January 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/12/">December 2015</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/11/">November 2015</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/09/">September 2015</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/06/">June 2015</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/05/">May 2015</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/04/">April 2015</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/02/">February 2015</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/11/">November 2014</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/08/">August 2014</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/06/">June 2014</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/05/">May 2014</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/02/">February 2014</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2016/10/17/spark-faq/">Spark常见问题</a>
+          </li>
+        
+          <li>
+            <a href="/2016/10/08/scala-learning/">Scala学习笔记</a>
+          </li>
+        
+          <li>
+            <a href="/2016/10/05/hexo-theme-modify/">Hexo Markdown语法效果</a>
+          </li>
+        
+          <li>
+            <a href="/2016/09/30/spring-howto/">Spring常见问题</a>
+          </li>
+        
+          <li>
+            <a href="/2016/09/29/test-coverage/">测试覆盖率配置</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2017 Jason Lu<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  <link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+  <script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>
